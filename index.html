@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-MAT LOG :: BIZ & RANK</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --text: #ffffff;
+            --gray: #1a1a1a;
+            --dark-gray: #0a0a0a;
+            --point: #ff3b30;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 480px; min-height: 100vh; position: relative; padding-bottom: 80px; border-left: 1px solid var(--gray); border-right: 1px solid var(--gray); }
+        
+        header { padding: 15px 20px; border-bottom: 1px solid var(--gray); position: sticky; top: 0; background: rgba(0,0,0,0.95); z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        header h1 { font-size: 18px; font-weight: 900; letter-spacing: -1px; }
+        header h1 span { color: var(--point); }
+        .user-info { font-size: 11px; color: #888; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .user-info .nickname { color: var(--gold); font-weight: 700; font-size: 12px; }
+
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+
+        /* Loading */
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 20px; }
+        .loading-screen .logo { font-size: 32px; font-weight: 900; }
+        .loading-screen .logo span { color: var(--point); }
+        .loading-screen .msg { color: #666; font-size: 13px; }
+        .spinner { width: 30px; height: 30px; border: 3px solid #333; border-top-color: var(--point); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Nickname Modal */
+        .nickname-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9998; padding: 20px; }
+        .nickname-modal.active { display: flex; }
+        .nickname-modal h2 { font-size: 24px; margin-bottom: 8px; }
+        .nickname-modal h2 span { color: var(--point); }
+        .nickname-modal p { color: #888; font-size: 13px; margin-bottom: 30px; text-align: center; }
+        .nickname-modal input { width: 100%; max-width: 300px; padding: 15px; background: #111; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 16px; margin-bottom: 15px; }
+        .nickname-modal button { width: 100%; max-width: 300px; padding: 15px; background: var(--point); border: none; color: #fff; font-weight: 900; font-size: 14px; border-radius: 8px; cursor: pointer; }
+        .nickname-modal .cancel-btn { background: #333; margin-top: 8px; }
+
+        /* Avatar */
+        .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #333; flex-shrink: 0; }
+        .avatar-default { display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; }
+
+        /* Feed */
+        .empty-feed { padding: 80px 30px; text-align: center; color: #444; font-size: 14px; line-height: 1.7; }
+        .empty-feed .big { font-size: 60px; margin-bottom: 15px; }
+        .post { width: 100%; border-bottom: 1px solid var(--gray); padding-bottom: 20px; background: var(--dark-gray); }
+        .post-meta { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #666; }
+        .post-meta .author-info { display: flex; align-items: center; gap: 8px; }
+        .post-meta .author { color: var(--gold); font-weight: 700; }
+        .post-meta .delete-btn { color: #555; cursor: pointer; font-size: 16px; padding: 4px 8px; }
+        .post-meta .delete-btn:hover { color: var(--point); }
+        .post-img-wrapper { width: 100%; aspect-ratio: 1/1.1; position: relative; background: #111; }
+        .post-img { width: 100%; height: 100%; object-fit: cover; }
+        .post-overlay { position: absolute; width: 100%; height: 100%; top: 0; left: 0; padding: 20px; background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.9) 100%); display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
+        .post-text { font-size: 17px; font-weight: 700; text-shadow: 0 2px 10px #000; }
+        .post-interact { display: flex; gap: 20px; padding: 15px 20px 0; }
+        .interact-item { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #ccc; cursor: pointer; user-select: none; transition: transform 0.1s; }
+        .interact-item:active { transform: scale(0.9); }
+        .interact-item.liked { color: var(--point); }
+        .interact-item .icon { font-size: 18px; }
+
+        /* Ranking Tab */
+        .rank-tabs { display: flex; border-bottom: 1px solid var(--gray); position: sticky; top: 53px; background: #000; z-index: 50; }
+        .rank-tab { flex: 1; padding: 14px; text-align: center; font-size: 12px; font-weight: 800; color: #555; cursor: pointer; letter-spacing: 1px; border-bottom: 2px solid transparent; }
+        .rank-tab.active { color: #fff; border-bottom-color: var(--point); }
+
+        .ranking-list { padding: 10px 0; }
+        .rank-item { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--gray); gap: 15px; cursor: pointer; }
+        .rank-num { font-size: 20px; font-weight: 900; width: 30px; text-align: center; font-style: italic; }
+        .rank-1 { color: var(--gold); font-size: 28px; }
+        .rank-2 { color: var(--silver); }
+        .rank-3 { color: var(--bronze); }
+        .rank-img { width: 60px; height: 60px; border-radius: 4px; object-fit: cover; background: #222; }
+        .rank-info { flex: 1; min-width: 0; }
+        .rank-info .title { font-size: 14px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rank-info .stats { font-size: 11px; color: #666; font-weight: 600; }
+        .rank-score { font-size: 14px; font-weight: 800; color: var(--point); }
+
+        /* Notification Tab */
+        .notif-list { padding: 0; }
+        .notif-item { padding: 15px 20px; border-bottom: 1px solid var(--gray); display: flex; gap: 12px; align-items: center; cursor: pointer; }
+        .notif-item.unread { background: #0d0d0d; border-left: 3px solid var(--point); }
+        .notif-icon { font-size: 24px; flex-shrink: 0; }
+        .notif-body { flex: 1; min-width: 0; }
+        .notif-text { font-size: 13px; color: #ddd; line-height: 1.4; }
+        .notif-text .name { color: var(--gold); font-weight: 700; }
+        .notif-time { font-size: 10px; color: #555; margin-top: 4px; }
+        .notif-thumb { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: #222; }
+
+        /* My */
+        .my-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid var(--gray); position: relative; }
+        .my-avatar-wrap { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 12px; position: relative; cursor: pointer; }
+        .my-avatar-wrap .avatar { width: 80px; height: 80px; font-size: 32px; }
+        .my-avatar-wrap .edit-overlay { position: absolute; right: 0; bottom: 0; width: 26px; height: 26px; background: var(--point); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .my-header .big-nick { font-size: 22px; font-weight: 900; color: var(--gold); margin-bottom: 5px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+        .my-header .big-nick .pencil { font-size: 14px; color: #666; }
+        .my-header .uid { font-size: 10px; color: #444; word-break: break-all; }
+        .my-stats { display: flex; padding: 20px; gap: 10px; border-bottom: 1px solid var(--gray); }
+        .stat-box { flex: 1; background: #111; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-box .num { font-size: 22px; font-weight: 900; color: var(--point); }
+        .stat-box .label { font-size: 10px; color: #888; margin-top: 4px; text-transform: uppercase; }
+
+        /* Nav */
+        nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto; height: 65px; background: #000; border-top: 1px solid var(--gray); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #666; font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 5px 12px; position: relative; }
+        .nav-item.active { color: #fff; }
+        .nav-item .nav-icon { font-size: 22px; }
+        .nav-item.post-btn .nav-icon { color: var(--point); font-size: 28px; }
+        .nav-badge { position: absolute; top: 2px; right: 4px; background: var(--point); color: #fff; font-size: 9px; font-weight: 900; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px; display: flex; align-items: center; justify-content: center; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .modal.active { display: flex; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--gray); }
+        .modal-header h1 { font-size: 16px; font-weight: 900; }
+        .modal-header h1 span { color: var(--point); }
+        .modal-header .close-btn { font-size: 24px; cursor: pointer; padding: 5px 10px; }
+        #preview { width: 100%; aspect-ratio: 1/1; object-fit: cover; margin-top: 20px; border-radius: 4px; background: #111; }
+        #caption { width: 100%; padding: 15px; background: #111; border: 1px solid #333; color: #fff; border-radius: 8px; margin-top: 15px; font-size: 14px; }
+        .modal-btns { margin-top: 15px; display: flex; gap: 10px; }
+        .modal-btns button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: 900; font-size: 14px; cursor: pointer; }
+        .upload-btn { background: var(--point); color: #fff; }
+        .upload-btn:disabled { background: #444; cursor: not-allowed; }
+        .upload-progress { background: #111; border-radius: 4px; padding: 10px; margin-top: 15px; font-size: 12px; color: #888; text-align: center; }
+
+        /* Comment Modal */
+        .comment-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 3000; align-items: flex-end; justify-content: center; }
+        .comment-modal.active { display: flex; }
+        .comment-sheet { width: 100%; max-width: 480px; background: #0a0a0a; border-top-left-radius: 16px; border-top-right-radius: 16px; max-height: 80vh; display: flex; flex-direction: column; animation: slideUp 0.25s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .comment-header { padding: 15px 20px; border-bottom: 1px solid var(--gray); display: flex; justify-content: space-between; align-items: center; }
+        .comment-header h3 { font-size: 14px; font-weight: 800; }
+        .comment-header h3 span { color: var(--point); }
+        .comment-list { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .comment { padding: 12px 20px; border-bottom: 1px solid #111; display: flex; gap: 10px; }
+        .comment-content { flex: 1; min-width: 0; }
+        .comment-author { font-size: 12px; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
+        .comment-time { font-size: 10px; color: #555; margin-left: 8px; font-weight: 400; }
+        .comment-text { font-size: 14px; color: #ddd; line-height: 1.4; word-break: break-word; }
+        .comment-empty { padding: 60px 20px; text-align: center; color: #444; font-size: 13px; }
+        .comment-input-wrap { padding: 12px 15px; border-top: 1px solid var(--gray); display: flex; gap: 8px; background: #000; }
+        .comment-input-wrap input { flex: 1; padding: 12px 15px; background: #111; border: 1px solid #333; color: #fff; border-radius: 24px; font-size: 13px; }
+        .comment-input-wrap button { padding: 0 18px; background: var(--point); border: none; color: #fff; font-weight: 800; border-radius: 24px; cursor: pointer; font-size: 13px; }
+        .comment-input-wrap button:disabled { background: #333; cursor: not-allowed; }
+
+        /* Confirm Dialog */
+        .confirm-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 4000; align-items: center; justify-content: center; padding: 20px; }
+        .confirm-modal.active { display: flex; }
+        .confirm-box { background: #1a1a1a; border-radius: 12px; padding: 25px 20px; max-width: 320px; width: 100%; text-align: center; }
+        .confirm-box h3 { font-size: 16px; margin-bottom: 8px; }
+        .confirm-box p { font-size: 13px; color: #aaa; margin-bottom: 20px; line-height: 1.5; }
+        .confirm-box .btn-row { display: flex; gap: 10px; }
+        .confirm-box button { flex: 1; padding: 13px; border: none; border-radius: 8px; font-weight: 800; font-size: 13px; cursor: pointer; }
+        .confirm-box .cancel { background: #333; color: #fff; }
+        .confirm-box .confirm { background: var(--point); color: #fff; }
+
+        #file-input, #profile-file-input { display: none; }
+        .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); color: #000; padding: 12px 20px; border-radius: 30px; font-size: 13px; font-weight: 700; z-index: 5000; animation: fadeUp 2.5s; opacity: 0; pointer-events: none; }
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translate(-50%, 10px); }
+            10%, 80% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading">
+    <div class="logo">B-MAT <span>LOG.</span></div>
+    <div class="spinner"></div>
+    <div class="msg" id="loading-msg">로그인 중...</div>
+</div>
+
+<div class="nickname-modal" id="nickname-modal">
+    <h2 id="nickname-title">WELCOME TO <span>B-MAT</span></h2>
+    <p id="nickname-desc">병맛 짤 세계에 오신 걸 환영합니다.<br>닉네임을 정해주세요 (최대 10자)</p>
+    <input type="text" id="nickname-input" maxlength="10" placeholder="병맛러123">
+    <button onclick="saveNickname()" id="nickname-save-btn">시작하기</button>
+    <button class="cancel-btn" id="nickname-cancel-btn" onclick="closeNicknameModal()" style="display:none;">취소</button>
+</div>
+
+<div class="app-container" id="app" style="display:none;">
+    <header>
+        <h1 id="view-title">B-MAT <span>LOG.</span></h1>
+        <div class="user-info">
+            <div class="nickname" id="my-nickname">-</div>
+            <div>온라인</div>
+        </div>
+    </header>
+
+    <section id="sec-home" class="page-section active">
+        <main id="main-feed"></main>
+    </section>
+
+    <section id="sec-rank" class="page-section">
+        <div class="rank-tabs">
+            <div class="rank-tab active" data-period="day" onclick="changeRankTab('day')">DAILY</div>
+            <div class="rank-tab" data-period="week" onclick="changeRankTab('week')">WEEKLY</div>
+        </div>
+        <div class="ranking-list" id="ranking-list"></div>
+    </section>
+
+    <section id="sec-notif" class="page-section">
+        <div class="notif-list" id="notif-list"></div>
+    </section>
+
+    <section id="sec-my" class="page-section">
+        <div class="my-header">
+            <div class="my-avatar-wrap" onclick="changeProfilePic()">
+                <div class="avatar avatar-default" id="my-avatar-default" style="display:flex;">?</div>
+                <img class="avatar" id="my-avatar-img" style="display:none;" alt="">
+                <div class="edit-overlay">📷</div>
+            </div>
+            <div class="big-nick" id="my-big-nick" onclick="changeNickname()">
+                <span id="my-big-nick-text">-</span>
+                <span class="pencil">✏️</span>
+            </div>
+            <div class="uid" id="my-uid">-</div>
+        </div>
+        <div class="my-stats">
+            <div class="stat-box">
+                <div class="num" id="my-post-count">0</div>
+                <div class="label">POSTS</div>
+            </div>
+            <div class="stat-box">
+                <div class="num" id="my-like-count">0</div>
+                <div class="label">LIKES</div>
+            </div>
+            <div class="stat-box">
+                <div class="num" id="my-view-count">0</div>
+                <div class="label">VIEWS</div>
+            </div>
+        </div>
+        <div id="my-posts"></div>
+    </section>
+
+    <nav>
+        <div class="nav-item active" data-tab="home" onclick="changeTab('home')">
+            <div class="nav-icon">🏠</div><span>Feed</span>
+        </div>
+        <div class="nav-item" data-tab="rank" onclick="changeTab('rank')">
+            <div class="nav-icon">📊</div><span>Rank</span>
+        </div>
+        <div class="nav-item post-btn" onclick="openFilePicker()">
+            <div class="nav-icon">➕</div><span>Post</span>
+        </div>
+        <div class="nav-item" data-tab="notif" onclick="changeTab('notif')">
+            <div class="nav-icon">🔔</div><span>Alerts</span>
+            <div class="nav-badge" id="notif-badge" style="display:none;">0</div>
+        </div>
+        <div class="nav-item" data-tab="my" onclick="changeTab('my')">
+            <div class="nav-icon">👤</div><span>My</span>
+        </div>
+    </nav>
+
+    <input type="file" id="file-input" accept="image/*" onchange="openEditor(event)">
+    <input type="file" id="profile-file-input" accept="image/*" onchange="uploadProfilePic(event)">
+
+    <div class="modal" id="upload-modal">
+        <div class="modal-header">
+            <h1>NEW <span>POST</span></h1>
+            <div class="close-btn" onclick="closeModal()">✕</div>
+        </div>
+        <img id="preview" alt="">
+        <input type="text" id="caption" maxlength="50" placeholder="병맛 멘트 입력... (최대 50자)">
+        <div class="modal-btns">
+            <button class="upload-btn" id="upload-btn" onclick="uploadPost()">업로드</button>
+        </div>
+        <div class="upload-progress" id="upload-progress" style="display:none;">업로드 중...</div>
+    </div>
+
+    <div class="comment-modal" id="comment-modal" onclick="closeCommentIfBg(event)">
+        <div class="comment-sheet" onclick="event.stopPropagation()">
+            <div class="comment-header">
+                <h3>COMMENTS <span id="comment-count">0</span></h3>
+                <div class="close-btn" onclick="closeComment()">✕</div>
+            </div>
+            <div class="comment-list" id="comment-list"></div>
+            <div class="comment-input-wrap">
+                <input type="text" id="comment-input" placeholder="댓글 입력..." maxlength="200" onkeypress="handleCommentEnter(event)">
+                <button id="comment-send-btn" onclick="sendComment()">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="confirm-modal" id="confirm-modal">
+        <div class="confirm-box">
+            <h3 id="confirm-title">확인</h3>
+            <p id="confirm-msg">정말 진행하시겠어요?</p>
+            <div class="btn-row">
+                <button class="cancel" onclick="closeConfirm()">취소</button>
+                <button class="confirm" id="confirm-ok-btn">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, increment, where, serverTimestamp, onSnapshot, arrayUnion, arrayRemove, deleteDoc, getDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDd8hLx5f0m-tvTByZzElB1vQDh_JBIw7g",
+        authDomain: "bmat-log.firebaseapp.com",
+        projectId: "bmat-log",
+        storageBucket: "bmat-log.firebasestorage.app",
+        messagingSenderId: "131717530577",
+        appId: "1:131717530577:web:1e12f82a7490b6c81b16f0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    let currentUser = null;
+    let currentNickname = null;
+    let currentProfilePic = null;
+    let currentProfilePicPath = null;
+    let selectedFile = null;
+    let allPosts = [];
+    let viewedPosts = new Set();
+    let currentRankPeriod = 'day';
+    let currentCommentPostId = null;
+    let commentUnsubscribe = null;
+    let notifications = [];
+
+    // ============ 인증 ============
+    onAuthStateChanged(auth, async (user) => {
+        try {
+            if (user) {
+                currentUser = user;
+                console.log("로그인됨:", user.uid);
+                document.getElementById('loading-msg').textContent = '사용자 정보 확인 중...';
+                
+                let userDoc;
+                try {
+                    userDoc = await Promise.race([
+                        getDoc(doc(db, 'users', user.uid)),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000))
+                    ]);
+                } catch (e) {
+                    console.error("getDoc 실패:", e);
+                    document.getElementById('loading-msg').textContent = '⚠️ 사용자 정보 조회 실패. 신규 사용자로 진행합니다...';
+                    // getDoc 실패해도 신규 사용자로 처리
+                    userDoc = { exists: () => false };
+                    await new Promise(r => setTimeout(r, 1500));
+                }
+                
+                if (userDoc.exists && userDoc.exists()) {
+                    const userData = userDoc.data();
+                    currentNickname = userData.nickname;
+                    currentProfilePic = userData.profilePic || null;
+                    currentProfilePicPath = userData.profilePicPath || null;
+                    applyMyProfile();
+                    showApp();
+                    loadFeed();
+                    loadNotifications();
+                } else {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('nickname-modal').classList.add('active');
+                }
+            } else {
+                document.getElementById('loading-msg').textContent = '로그인 중...';
+                try {
+                    await signInAnonymously(auth);
+                } catch (e) {
+                    console.error("로그인 실패:", e);
+                    document.getElementById('loading-msg').innerHTML = '⚠️ 로그인 실패<br><span style="font-size:10px;color:#666">' + (e.code || e.message) + '</span><br><br><button onclick="location.reload()" style="margin-top:10px;padding:10px 20px;background:#ff3b30;color:#fff;border:none;border-radius:6px;font-weight:bold;">다시 시도</button>';
+                }
+            }
+        } catch (e) {
+            console.error("인증 처리 중 에러:", e);
+            document.getElementById('loading-msg').innerHTML = '⚠️ 오류 발생<br><span style="font-size:10px;color:#666">' + (e.code || e.message) + '</span><br><br><button onclick="location.reload()" style="margin-top:10px;padding:10px 20px;background:#ff3b30;color:#fff;border:none;border-radius:6px;font-weight:bold;">다시 시도</button>';
+        }
+    });
+
+    function applyMyProfile() {
+        document.getElementById('my-nickname').textContent = currentNickname;
+        document.getElementById('my-big-nick-text').textContent = currentNickname;
+        document.getElementById('my-uid').textContent = 'ID: ' + currentUser.uid.substring(0, 12) + '...';
+        
+        const defaultEl = document.getElementById('my-avatar-default');
+        const imgEl = document.getElementById('my-avatar-img');
+        if (currentProfilePic) {
+            imgEl.src = currentProfilePic;
+            imgEl.style.display = 'block';
+            defaultEl.style.display = 'none';
+        } else {
+            defaultEl.style.display = 'flex';
+            defaultEl.textContent = currentNickname.charAt(0).toUpperCase();
+            defaultEl.style.background = stringToColor(currentUser.uid);
+            imgEl.style.display = 'none';
+        }
+    }
+
+    window.saveNickname = async function() {
+        const input = document.getElementById('nickname-input').value.trim();
+        if (!input) { alert('닉네임을 입력해주세요'); return; }
+        
+        const saveBtn = document.getElementById('nickname-save-btn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = '저장 중...';
+        
+        try {
+            const isFirstTime = !currentNickname;
+            const oldNickname = currentNickname;
+            currentNickname = input;
+            
+            await setDoc(doc(db, 'users', currentUser.uid), {
+                nickname: input,
+                profilePic: currentProfilePic || null,
+                profilePicPath: currentProfilePicPath || null,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            
+            // 기존 게시물의 작성자명도 업데이트 (간단히 - 본인 글만)
+            if (!isFirstTime && oldNickname !== input) {
+                try {
+                    const myPostsQuery = query(collection(db, 'posts'), where('authorId', '==', currentUser.uid));
+                    const myPostsSnap = await getDocs(myPostsQuery);
+                    const batch = writeBatch(db);
+                    myPostsSnap.forEach(d => {
+                        batch.update(d.ref, { authorName: input });
+                    });
+                    await batch.commit();
+                } catch (e) {
+                    console.warn('기존 게시물 닉네임 업데이트 실패:', e);
+                }
+            }
+            
+            applyMyProfile();
+            closeNicknameModal();
+            
+            if (isFirstTime) {
+                showApp();
+                loadFeed();
+                loadNotifications();
+            } else {
+                showToast('✏️ 닉네임 변경 완료');
+            }
+        } catch (e) {
+            showToast('❌ 저장 실패: ' + e.message);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '시작하기';
+        }
+    };
+
+    window.changeNickname = function() {
+        const modal = document.getElementById('nickname-modal');
+        document.getElementById('nickname-title').innerHTML = 'CHANGE <span>NICKNAME</span>';
+        document.getElementById('nickname-desc').textContent = '새 닉네임을 입력해주세요 (최대 10자)';
+        document.getElementById('nickname-save-btn').textContent = '변경';
+        document.getElementById('nickname-cancel-btn').style.display = 'block';
+        document.getElementById('nickname-input').value = currentNickname;
+        modal.classList.add('active');
+    };
+
+    window.closeNicknameModal = function() {
+        document.getElementById('nickname-modal').classList.remove('active');
+    };
+
+    function showApp() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+    }
+
+    // ============ 프로필 사진 ============
+    window.changeProfilePic = function() {
+        document.getElementById('profile-file-input').click();
+    };
+
+    window.uploadProfilePic = async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) { alert('10MB 이하만'); return; }
+        
+        showToast('📤 프로필 사진 업로드 중...');
+        
+        try {
+            const compressed = await compressImage(file, 400, 0.85);
+            
+            // 새 경로
+            const newPath = `profiles/${currentUser.uid}_${Date.now()}.jpg`;
+            const storageRef = ref(storage, newPath);
+            await uploadBytes(storageRef, compressed);
+            const url = await getDownloadURL(storageRef);
+            
+            // 기존 프로필 삭제
+            if (currentProfilePicPath) {
+                try {
+                    await deleteObject(ref(storage, currentProfilePicPath));
+                } catch (e) { console.warn('기존 프로필 삭제 실패:', e); }
+            }
+            
+            currentProfilePic = url;
+            currentProfilePicPath = newPath;
+            
+            await updateDoc(doc(db, 'users', currentUser.uid), {
+                profilePic: url,
+                profilePicPath: newPath,
+                updatedAt: serverTimestamp()
+            });
+            
+            applyMyProfile();
+            showToast('✅ 프로필 사진 변경 완료');
+        } catch (e) {
+            showToast('❌ 실패: ' + e.message);
+        } finally {
+            document.getElementById('profile-file-input').value = '';
+        }
+    };
+
+    // ============ 이미지 압축 ============
+    function compressImage(file, maxSize, quality) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = (e) => { img.src = e.target.result; };
+            reader.onerror = reject;
+            img.onload = () => {
+                let w = img.width, h = img.height;
+                if (w > maxSize || h > maxSize) {
+                    if (w > h) { h = h * (maxSize / w); w = maxSize; }
+                    else { w = w * (maxSize / h); h = maxSize; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                    else reject(new Error('압축 실패'));
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ============ 피드 로딩 ============
+    function loadFeed() {
+        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50));
+        onSnapshot(q, (snapshot) => {
+            allPosts = [];
+            snapshot.forEach(d => allPosts.push({ id: d.id, ...d.data() }));
+            renderFeed();
+            renderRanking();
+            renderMyPosts();
+        });
+    }
+
+    function renderFeed() {
+        const feed = document.getElementById('main-feed');
+        if (allPosts.length === 0) {
+            feed.innerHTML = `<div class="empty-feed"><div class="big">📭</div>아직 올라온 짤이 없어요.<br>첫 번째 병맛 짤의 주인공이 되어보세요!</div>`;
+            return;
+        }
+        feed.innerHTML = '';
+        allPosts.forEach(post => {
+            const isLiked = post.likedBy && post.likedBy.includes(currentUser.uid);
+            const isMine = post.authorId === currentUser.uid;
+            const avatarHtml = renderAvatar(post.authorPic, post.authorName, post.authorId, 32);
+            
+            const el = document.createElement('div');
+            el.className = 'post';
+            el.dataset.postId = post.id;
+            el.innerHTML = `
+                <div class="post-meta">
+                    <div class="author-info">
+                        ${avatarHtml}
+                        <div>
+                            <div class="author">@${escapeHtml(post.authorName || '익명')}</div>
+                            <div style="font-size:10px;color:#555">${formatTime(post.createdAt)}</div>
+                        </div>
+                    </div>
+                    ${isMine ? `<div class="delete-btn" onclick="confirmDeletePost('${post.id}')">🗑️</div>` : ''}
+                </div>
+                <div class="post-img-wrapper">
+                    <img class="post-img" src="${post.imgUrl}" alt="" loading="lazy">
+                    <div class="post-overlay">
+                        <p class="post-text">${escapeHtml(post.caption || '')}</p>
+                    </div>
+                </div>
+                <div class="post-interact">
+                    <div class="interact-item ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', ${isLiked})">
+                        <span class="icon">${isLiked ? '❤️' : '🤍'}</span>
+                        <span>${post.likes || 0}</span>
+                    </div>
+                    <div class="interact-item" onclick="openComment('${post.id}')">
+                        <span class="icon">💬</span>
+                        <span>${post.commentCount || 0}</span>
+                    </div>
+                    <div class="interact-item">
+                        <span class="icon">👁️</span>
+                        <span>${post.views || 0}</span>
+                    </div>
+                </div>
+            `;
+            feed.appendChild(el);
+        });
+        observeViews();
+    }
+
+    function renderAvatar(picUrl, name, uid, size) {
+        const sz = size || 32;
+        if (picUrl) {
+            return `<img class="avatar" src="${picUrl}" style="width:${sz}px;height:${sz}px" alt="">`;
+        }
+        const initial = (name || '?').charAt(0).toUpperCase();
+        const color = stringToColor(uid || name || '');
+        return `<div class="avatar avatar-default" style="width:${sz}px;height:${sz}px;background:${color};font-size:${sz/2.3}px">${initial}</div>`;
+    }
+
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        const colors = ['#ff3b30','#ff9500','#ffcc00','#34c759','#5ac8fa','#007aff','#5856d6','#af52de','#ff2d55'];
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    let viewObserver = null;
+    function observeViews() {
+        if (viewObserver) viewObserver.disconnect();
+        viewObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const postId = entry.target.dataset.postId;
+                    if (postId && !viewedPosts.has(postId)) {
+                        viewedPosts.add(postId);
+                        countView(postId);
+                    }
+                }
+            });
+        }, { threshold: 0.5 });
+        document.querySelectorAll('.post').forEach(p => viewObserver.observe(p));
+    }
+
+    async function countView(postId) {
+        try {
+            await updateDoc(doc(db, 'posts', postId), { views: increment(1) });
+        } catch (e) { console.error('조회수 업데이트 실패:', e); }
+    }
+
+    // ============ 게시물 삭제 ============
+    window.confirmDeletePost = function(postId) {
+        showConfirm('🗑️ 게시물 삭제', '이 게시물을 정말 삭제할까요?\n사진과 댓글도 모두 사라져요.', () => deletePost(postId));
+    };
+
+    async function deletePost(postId) {
+        try {
+            const post = allPosts.find(p => p.id === postId);
+            if (!post) return;
+            
+            // 댓글 삭제
+            const commentsSnap = await getDocs(collection(db, 'posts', postId, 'comments'));
+            const batch = writeBatch(db);
+            commentsSnap.forEach(d => batch.delete(d.ref));
+            batch.delete(doc(db, 'posts', postId));
+            await batch.commit();
+            
+            // Storage 사진 삭제
+            if (post.storagePath) {
+                try {
+                    await deleteObject(ref(storage, post.storagePath));
+                } catch (e) { console.warn('Storage 삭제 실패:', e); }
+            }
+            
+            showToast('🗑️ 삭제 완료');
+        } catch (e) {
+            showToast('❌ 삭제 실패: ' + e.message);
+        }
+    }
+
+    // ============ 랭킹 ============
+    window.changeRankTab = function(period) {
+        currentRankPeriod = period;
+        document.querySelectorAll('.rank-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.rank-tab[data-period="${period}"]`).classList.add('active');
+        renderRanking();
+    };
+
+    function renderRanking() {
+        const list = document.getElementById('ranking-list');
+        const now = Date.now();
+        const periodMs = currentRankPeriod === 'day' ? 24*60*60*1000 : 7*24*60*60*1000;
+        
+        const filtered = allPosts.filter(p => {
+            if (!p.createdAt || !p.createdAt.toDate) return false;
+            return (now - p.createdAt.toDate().getTime()) <= periodMs;
+        });
+        filtered.forEach(p => {
+            p._score = (p.likes || 0)*3 + (p.commentCount || 0)*2 + (p.views || 0)*0.1;
+        });
+        filtered.sort((a, b) => b._score - a._score);
+        const top10 = filtered.slice(0, 10).filter(p => p._score > 0);
+
+        if (top10.length === 0) {
+            const period = currentRankPeriod === 'day' ? '24시간' : '7일';
+            list.innerHTML = `<div class="empty-feed"><div class="big">🏆</div>최근 ${period} 내 랭킹이 없어요.<br>좋아요·댓글·조회수로 점수가 쌓여요!</div>`;
+            return;
+        }
+        list.innerHTML = '';
+        top10.forEach((p, i) => {
+            const rank = i + 1;
+            const rankClass = rank <= 3 ? `rank-${rank}` : '';
+            const item = document.createElement('div');
+            item.className = 'rank-item';
+            item.onclick = () => openComment(p.id);
+            item.innerHTML = `
+                <div class="rank-num ${rankClass}">${rank}</div>
+                <img src="${p.imgUrl}" class="rank-img">
+                <div class="rank-info">
+                    <div class="title">${escapeHtml(p.caption || '제목없음')}</div>
+                    <div class="stats">@${escapeHtml(p.authorName || '익명')} • ❤️${p.likes || 0} 💬${p.commentCount || 0} 👁️${p.views || 0}</div>
+                </div>
+                <div class="rank-score">${rank === 1 ? 'TOP' : rank <= 3 ? 'HOT' : 'UP'}</div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function renderMyPosts() {
+        const myPosts = allPosts.filter(p => p.authorId === currentUser.uid);
+        let myLikes = 0, myViews = 0;
+        myPosts.forEach(p => { myLikes += (p.likes || 0); myViews += (p.views || 0); });
+        document.getElementById('my-post-count').textContent = myPosts.length;
+        document.getElementById('my-like-count').textContent = myLikes;
+        document.getElementById('my-view-count').textContent = myViews;
+        
+        const myFeed = document.getElementById('my-posts');
+        if (myPosts.length === 0) {
+            myFeed.innerHTML = `<div class="empty-feed"><div class="big">📷</div>아직 올린 짤이 없어요</div>`;
+            return;
+        }
+        myFeed.innerHTML = '';
+        myPosts.forEach(p => {
+            const el = document.createElement('div');
+            el.className = 'post';
+            el.innerHTML = `
+                <div class="post-meta">
+                    <div class="author-info">${renderAvatar(p.authorPic, p.authorName, p.authorId, 32)}
+                        <div><div class="author">@${escapeHtml(p.authorName || '익명')}</div>
+                        <div style="font-size:10px;color:#555">${formatTime(p.createdAt)}</div></div>
+                    </div>
+                    <div class="delete-btn" onclick="confirmDeletePost('${p.id}')">🗑️</div>
+                </div>
+                <div class="post-img-wrapper">
+                    <img class="post-img" src="${p.imgUrl}">
+                    <div class="post-overlay"><p class="post-text">${escapeHtml(p.caption || '')}</p></div>
+                </div>
+                <div class="post-interact">
+                    <div class="interact-item"><span class="icon">❤️</span><span>${p.likes || 0}</span></div>
+                    <div class="interact-item"><span class="icon">💬</span><span>${p.commentCount || 0}</span></div>
+                    <div class="interact-item"><span class="icon">👁️</span><span>${p.views || 0}</span></div>
+                </div>
+            `;
+            myFeed.appendChild(el);
+        });
+    }
+
+    // ============ 좋아요 ============
+    window.toggleLike = async function(postId, currentlyLiked) {
+        try {
+            const postRef = doc(db, 'posts', postId);
+            const post = allPosts.find(p => p.id === postId);
+            
+            if (currentlyLiked) {
+                await updateDoc(postRef, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
+            } else {
+                await updateDoc(postRef, { likes: increment(1), likedBy: arrayUnion(currentUser.uid) });
+                
+                // 알림 생성 (남의 글일 때만)
+                if (post && post.authorId !== currentUser.uid) {
+                    await createNotification(post.authorId, {
+                        type: 'like',
+                        fromUid: currentUser.uid,
+                        fromName: currentNickname,
+                        fromPic: currentProfilePic || null,
+                        postId: postId,
+                        postThumb: post.imgUrl,
+                        text: `${currentNickname}님이 회원님의 짤을 좋아해요`
+                    });
+                }
+            }
+        } catch (e) {
+            showToast('좋아요 실패: ' + e.message);
+        }
+    };
+
+    // ============ 댓글 ============
+    window.openComment = function(postId) {
+        currentCommentPostId = postId;
+        document.getElementById('comment-modal').classList.add('active');
+        document.getElementById('comment-input').value = '';
+        loadComments(postId);
+    };
+
+    window.closeComment = function() {
+        document.getElementById('comment-modal').classList.remove('active');
+        if (commentUnsubscribe) { commentUnsubscribe(); commentUnsubscribe = null; }
+        currentCommentPostId = null;
+    };
+
+    window.closeCommentIfBg = function(e) {
+        if (e.target.id === 'comment-modal') closeComment();
+    };
+
+    function loadComments(postId) {
+        if (commentUnsubscribe) commentUnsubscribe();
+        const q = query(collection(db, 'posts', postId, 'comments'), orderBy('createdAt', 'asc'), limit(100));
+        commentUnsubscribe = onSnapshot(q, (snapshot) => {
+            const list = document.getElementById('comment-list');
+            document.getElementById('comment-count').textContent = snapshot.size;
+            
+            if (snapshot.empty) {
+                list.innerHTML = `<div class="comment-empty">아직 댓글이 없어요.<br>첫 댓글의 주인공이 되어보세요 💬</div>`;
+                return;
+            }
+            list.innerHTML = '';
+            snapshot.forEach(d => {
+                const c = d.data();
+                const el = document.createElement('div');
+                el.className = 'comment';
+                el.innerHTML = `
+                    ${renderAvatar(c.authorPic, c.authorName, c.authorId, 32)}
+                    <div class="comment-content">
+                        <div class="comment-author">@${escapeHtml(c.authorName || '익명')}<span class="comment-time">${formatTime(c.createdAt)}</span></div>
+                        <div class="comment-text">${escapeHtml(c.text || '')}</div>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            list.scrollTop = list.scrollHeight;
+        });
+    }
+
+    window.handleCommentEnter = function(e) {
+        if (e.key === 'Enter') sendComment();
+    };
+
+    window.sendComment = async function() {
+        const input = document.getElementById('comment-input');
+        const text = input.value.trim();
+        if (!text || !currentCommentPostId) return;
+        const btn = document.getElementById('comment-send-btn');
+        btn.disabled = true;
+        
+        try {
+            await addDoc(collection(db, 'posts', currentCommentPostId, 'comments'), {
+                text: text,
+                authorId: currentUser.uid,
+                authorName: currentNickname,
+                authorPic: currentProfilePic || null,
+                createdAt: serverTimestamp()
+            });
+            await updateDoc(doc(db, 'posts', currentCommentPostId), {
+                commentCount: increment(1)
+            });
+            
+            // 알림 (남의 글에 댓글 달 때만)
+            const post = allPosts.find(p => p.id === currentCommentPostId);
+            if (post && post.authorId !== currentUser.uid) {
+                await createNotification(post.authorId, {
+                    type: 'comment',
+                    fromUid: currentUser.uid,
+                    fromName: currentNickname,
+                    fromPic: currentProfilePic || null,
+                    postId: currentCommentPostId,
+                    postThumb: post.imgUrl,
+                    text: `${currentNickname}: ${text.substring(0, 30)}${text.length > 30 ? '...' : ''}`
+                });
+            }
+            
+            input.value = '';
+        } catch (e) {
+            showToast('댓글 실패: ' + e.message);
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    // ============ 알림 ============
+    async function createNotification(toUid, data) {
+        try {
+            await addDoc(collection(db, 'users', toUid, 'notifications'), {
+                ...data,
+                read: false,
+                createdAt: serverTimestamp()
+            });
+        } catch (e) { console.warn('알림 생성 실패:', e); }
+    }
+
+    function loadNotifications() {
+        const q = query(
+            collection(db, 'users', currentUser.uid, 'notifications'),
+            orderBy('createdAt', 'desc'),
+            limit(50)
+        );
+        onSnapshot(q, (snapshot) => {
+            notifications = [];
+            snapshot.forEach(d => notifications.push({ id: d.id, ...d.data() }));
+            renderNotifications();
+            updateNotifBadge();
+        });
+    }
+
+    function renderNotifications() {
+        const list = document.getElementById('notif-list');
+        if (notifications.length === 0) {
+            list.innerHTML = `<div class="empty-feed"><div class="big">🔕</div>아직 알림이 없어요.<br>좋아요·댓글이 오면 여기 표시돼요</div>`;
+            return;
+        }
+        list.innerHTML = '';
+        notifications.forEach(n => {
+            const el = document.createElement('div');
+            el.className = 'notif-item' + (n.read ? '' : ' unread');
+            el.onclick = () => handleNotifClick(n);
+            const icon = n.type === 'like' ? '❤️' : '💬';
+            el.innerHTML = `
+                <div class="notif-icon">${icon}</div>
+                <div class="notif-body">
+                    <div class="notif-text">${escapeHtml(n.text || '')}</div>
+                    <div class="notif-time">${formatTime(n.createdAt)}</div>
+                </div>
+                ${n.postThumb ? `<img class="notif-thumb" src="${n.postThumb}">` : ''}
+            `;
+            list.appendChild(el);
+        });
+    }
+
+    function updateNotifBadge() {
+        const unread = notifications.filter(n => !n.read).length;
+        const badge = document.getElementById('notif-badge');
+        if (unread > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = unread > 99 ? '99+' : unread;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    async function handleNotifClick(n) {
+        if (!n.read) {
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'notifications', n.id), { read: true });
+            } catch (e) { console.warn(e); }
+        }
+        if (n.postId) openComment(n.postId);
+    }
+
+    // ============ 업로드 ============
+    window.openFilePicker = function() {
+        document.getElementById('file-input').click();
+    };
+
+    window.openEditor = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 20 * 1024 * 1024) { alert('20MB 이하 파일만'); return; }
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            document.getElementById('preview').src = ev.target.result;
+            document.getElementById('upload-modal').classList.add('active');
+            document.getElementById('caption').value = '';
+        };
+        reader.readAsDataURL(file);
+    };
+
+    window.closeModal = function() {
+        document.getElementById('upload-modal').classList.remove('active');
+        document.getElementById('file-input').value = '';
+        selectedFile = null;
+    };
+
+    window.uploadPost = async function() {
+        if (!selectedFile) return;
+        const caption = document.getElementById('caption').value.trim() || '의미 없음';
+        const btn = document.getElementById('upload-btn');
+        const progress = document.getElementById('upload-progress');
+        btn.disabled = true;
+        btn.textContent = '업로드 중...';
+        progress.style.display = 'block';
+        progress.textContent = '🗜️ 압축 중...';
+
+        try {
+            const compressed = await compressImage(selectedFile, 1080, 0.85);
+            progress.textContent = `📤 업로드 중... (${(compressed.size/1024).toFixed(0)}KB)`;
+            
+            const fileName = `${Date.now()}_${currentUser.uid.substring(0,6)}.jpg`;
+            const storagePath = `posts/${fileName}`;
+            const storageRef = ref(storage, storagePath);
+            await uploadBytes(storageRef, compressed);
+            
+            progress.textContent = '🔗 링크 받는 중...';
+            const imgUrl = await getDownloadURL(storageRef);
+            
+            progress.textContent = '💾 게시 중...';
+            await addDoc(collection(db, 'posts'), {
+                imgUrl: imgUrl,
+                storagePath: storagePath,
+                caption: caption,
+                likes: 0,
+                views: 0,
+                commentCount: 0,
+                likedBy: [],
+                authorId: currentUser.uid,
+                authorName: currentNickname,
+                authorPic: currentProfilePic || null,
+                createdAt: serverTimestamp()
+            });
+            showToast('🎉 업로드 완료!');
+            closeModal();
+            btn.disabled = false;
+            btn.textContent = '업로드';
+            progress.style.display = 'none';
+            changeTab('home');
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 업로드 실패: ' + e.message);
+            btn.disabled = false;
+            btn.textContent = '업로드';
+            progress.style.display = 'none';
+        }
+    };
+
+    // ============ Confirm Dialog ============
+    let confirmCallback = null;
+    function showConfirm(title, msg, callback) {
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-msg').textContent = msg;
+        confirmCallback = callback;
+        document.getElementById('confirm-modal').classList.add('active');
+    }
+    window.closeConfirm = function() {
+        document.getElementById('confirm-modal').classList.remove('active');
+        confirmCallback = null;
+    };
+    document.getElementById('confirm-ok-btn').onclick = () => {
+        const cb = confirmCallback;
+        closeConfirm();
+        if (cb) cb();
+    };
+
+    // ============ 탭 ============
+    window.changeTab = function(tab) {
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('sec-' + tab).classList.add('active');
+        document.querySelector(`.nav-item[data-tab="${tab}"]`)?.classList.add('active');
+        const titleMap = { home: 'B-MAT', rank: 'RANKING', notif: 'ALERTS', my: 'MY INFO' };
+        document.getElementById('view-title').innerHTML = titleMap[tab] + ' <span>LOG.</span>';
+        
+        // 알림 탭 들어가면 자동으로 모두 읽음 처리 (선택사항)
+        if (tab === 'notif') {
+            markAllNotifRead();
+        }
+    };
+
+    async function markAllNotifRead() {
+        const unread = notifications.filter(n => !n.read);
+        if (unread.length === 0) return;
+        try {
+            const batch = writeBatch(db);
+            unread.forEach(n => {
+                batch.update(doc(db, 'users', currentUser.uid, 'notifications', n.id), { read: true });
+            });
+            await batch.commit();
+        } catch (e) { console.warn('읽음 처리 실패:', e); }
+    }
+
+    // ============ 유틸 ============
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatTime(ts) {
+        if (!ts || !ts.toDate) return '방금';
+        const date = ts.toDate();
+        const diff = (Date.now() - date.getTime()) / 1000;
+        if (diff < 60) return '방금';
+        if (diff < 3600) return Math.floor(diff / 60) + '분 전';
+        if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+        return Math.floor(diff / 86400) + '일 전';
+    }
+
+    function showToast(msg) {
+        const old = document.querySelector('.toast');
+        if (old) old.remove();
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2500);
+    }
+</script>
+
+</body>
+</html>
