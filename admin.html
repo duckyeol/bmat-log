@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>B-MAT LOG :: ADMIN</title>
+    <link rel="icon" type="image/png" href="icons/favicon-32.png">
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --surface: #ffffff;
+            --text: #1a1a1a;
+            --sub-text: #6e6e73;
+            --muted: #999;
+            --border: #e5e5e7;
+            --point: #ff3b30;
+            --point-bg: #fff5f5;
+            --success: #34c759;
+            --warning: #ff9500;
+            --gold: #ffd700;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; }
+        html, body { background: var(--bg); color: var(--text); min-height: 100vh; }
+        button { cursor: pointer; font-family: inherit; }
+        
+        /* 로그인 화면 */
+        .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .login-screen.hidden { display: none; }
+        .login-box { background: var(--surface); border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 380px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .login-box .logo { font-size: 28px; font-weight: 900; letter-spacing: -1px; text-align: center; margin-bottom: 4px; }
+        .login-box .logo span { color: var(--point); }
+        .login-box .badge { font-size: 11px; font-weight: 700; color: var(--point); background: var(--point-bg); padding: 4px 10px; border-radius: 12px; display: inline-block; margin: 0 auto 24px; letter-spacing: 1px; }
+        .login-box .badge-wrap { text-align: center; }
+        .login-box .desc { font-size: 13px; color: var(--sub-text); text-align: center; margin-bottom: 24px; line-height: 1.5; }
+        .login-box .field { margin-bottom: 14px; }
+        .login-box label { display: block; font-size: 11px; color: var(--sub-text); font-weight: 700; margin-bottom: 6px; letter-spacing: 0.3px; }
+        .login-box input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: #fafafa; color: var(--text); font-size: 14px; }
+        .login-box input:focus { outline: none; border-color: var(--point); background: #fff; }
+        .login-box .primary-btn { width: 100%; padding: 13px; background: var(--text); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; margin-top: 8px; }
+        .login-box .primary-btn:hover { background: #000; }
+        .login-box .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .login-error { margin-top: 12px; padding: 10px; background: var(--point-bg); border: 1px solid var(--point); border-radius: 6px; font-size: 12px; color: var(--point); display: none; }
+        .login-error.active { display: block; }
+        .back-link { display: block; text-align: center; margin-top: 18px; font-size: 12px; color: var(--sub-text); text-decoration: none; }
+        
+        /* 어드민 레이아웃 */
+        .admin-layout { display: none; min-height: 100vh; }
+        .admin-layout.active { display: flex; }
+        
+        /* 사이드바 */
+        .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; position: sticky; top: 0; height: 100vh; }
+        .sidebar .logo-area { padding: 20px; border-bottom: 1px solid var(--border); }
+        .sidebar .logo { font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+        .sidebar .logo span { color: var(--point); }
+        .sidebar .badge { font-size: 9px; font-weight: 700; color: var(--point); background: var(--point-bg); padding: 2px 8px; border-radius: 8px; margin-top: 4px; display: inline-block; letter-spacing: 1px; }
+        .sidebar nav { flex: 1; padding: 12px 0; }
+        .sidebar .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: var(--sub-text); font-size: 13px; font-weight: 600; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; }
+        .sidebar .nav-item:hover { background: var(--bg); color: var(--text); }
+        .sidebar .nav-item.active { background: var(--point-bg); color: var(--point); border-left-color: var(--point); }
+        .sidebar .nav-item .icon { width: 18px; text-align: center; }
+        .sidebar .nav-badge { margin-left: auto; background: var(--point); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; min-width: 20px; text-align: center; }
+        
+        /* 신고 관리 */
+        .report-section { margin-bottom: 24px; }
+        .report-section-title { font-size: 13px; font-weight: 800; margin-bottom: 12px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+        .report-section-title .count { background: var(--point); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 800; }
+        .report-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
+        .report-card.urgent { border-color: var(--point); background: var(--point-bg); }
+        .report-card .thumb { width: 70px; height: 70px; border-radius: 6px; object-fit: cover; cursor: pointer; flex-shrink: 0; background: var(--bg); }
+        .report-card .info { flex: 1; min-width: 0; }
+        .report-card .top-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+        .report-card .report-badge { background: var(--point); color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
+        .report-card .report-badge.urgent { background: #d92c22; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .report-card .author { font-size: 13px; font-weight: 700; }
+        .report-card .time { font-size: 11px; color: var(--sub-text); }
+        .report-card .content-preview { font-size: 12px; color: var(--text); margin: 6px 0; line-height: 1.4; word-break: break-word; }
+        .report-card .meta { font-size: 11px; color: var(--sub-text); margin-bottom: 8px; }
+        .report-card .actions { display: flex; gap: 6px; }
+        .report-card .btn { padding: 6px 12px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+        .report-card .btn:hover { background: var(--bg); }
+        .report-card .btn.danger { color: var(--point); border-color: #ffcdc7; }
+        .report-card .btn.danger:hover { background: var(--point-bg); }
+        .report-card .btn.primary { background: var(--text); color: #fff; border-color: var(--text); }
+        .report-card .btn.primary:hover { background: #000; }
+        .report-card.comment-card { padding-left: 14px; }
+        .report-card.comment-card .comment-icon { width: 36px; height: 36px; background: var(--bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        
+        /* 어드민 관리 */
+        .admin-list { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .admin-list-header { padding: 14px 18px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+        .admin-list-header .count { color: var(--sub-text); font-weight: 600; font-size: 12px; }
+        .admin-row { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .admin-row:last-child { border-bottom: none; }
+        .admin-row:hover { background: var(--bg); }
+        .admin-row .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: var(--text); flex-shrink: 0; overflow: hidden; }
+        .admin-row .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .admin-row .info { flex: 1; min-width: 0; }
+        .admin-row .name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .admin-row .role-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.3px; }
+        .admin-row .role-badge.super { background: linear-gradient(135deg, #ffd700, #ff9500); color: #fff; }
+        .admin-row .role-badge.admin { background: var(--point-bg); color: var(--point); }
+        .admin-row .role-badge.me { background: var(--text); color: #fff; }
+        .admin-row .meta { font-size: 11px; color: var(--sub-text); margin-top: 3px; word-break: break-all; }
+        .admin-row .actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .admin-row .btn { padding: 6px 12px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); cursor: pointer; }
+        .admin-row .btn:hover { background: var(--bg); }
+        .admin-row .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .admin-row .btn.primary { background: var(--text); color: #fff; border-color: var(--text); }
+        .admin-row .btn.primary:hover { background: #000; }
+        .admin-row .btn.gold { background: linear-gradient(135deg, #ffd700, #ff9500); color: #fff; border: none; }
+        .admin-row .btn.danger { color: var(--point); border-color: #ffcdc7; }
+        .admin-row .btn.danger:hover { background: var(--point-bg); }
+        .admin-empty { padding: 30px 20px; text-align: center; font-size: 12px; color: var(--sub-text); }
+        
+        /* 슈퍼 어드민 안내 박스 */
+        .info-box { background: linear-gradient(135deg, #fff8e6, #ffe8c5); border: 1px solid #ffd700; border-radius: 10px; padding: 14px 18px; margin-bottom: 18px; font-size: 12px; color: #6e4a00; line-height: 1.6; }
+        .info-box strong { display: block; margin-bottom: 4px; color: #4a3000; }
+        
+        /* 사용자 관리 */
+        .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+        .user-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; transition: box-shadow 0.15s; }
+        .user-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .user-card.banned { background: #fff5f5; border-color: #ffcdc7; opacity: 0.85; }
+        .user-card .header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .user-card .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; color: var(--text); flex-shrink: 0; overflow: hidden; }
+        .user-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-card .info { flex: 1; min-width: 0; }
+        .user-card .name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+        .user-card .name { font-size: 14px; font-weight: 800; color: var(--text); }
+        .user-card .badge { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.3px; }
+        .user-card .badge.super { background: linear-gradient(135deg, #ffd700, #ff9500); color: #fff; }
+        .user-card .badge.admin { background: var(--point-bg); color: var(--point); }
+        .user-card .badge.email { background: #e3f2fd; color: #1565c0; }
+        .user-card .badge.anonymous { background: #f0f0f0; color: #666; }
+        .user-card .badge.banned { background: #ffebee; color: #c62828; }
+        .user-card .badge.reported { background: #fff3e0; color: #e65100; }
+        .user-card .meta { font-size: 11px; color: var(--sub-text); word-break: break-all; }
+        .user-card .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 10px 0; }
+        .user-card .stat-item { text-align: center; }
+        .user-card .stat-item .value { font-size: 16px; font-weight: 800; color: var(--text); }
+        .user-card .stat-item .label { font-size: 10px; color: var(--sub-text); margin-top: 2px; }
+        .user-card .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .user-card .btn { padding: 6px 10px; font-size: 11px; font-weight: 700; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-family: inherit; flex: 1; min-width: 60px; }
+        .user-card .btn:hover { background: var(--bg); }
+        .user-card .btn.primary { background: var(--text); color: #fff; border-color: var(--text); }
+        .user-card .btn.primary:hover { background: #000; }
+        .user-card .btn.warning { background: #fff8e1; color: #f57c00; border-color: #ffe082; }
+        .user-card .btn.warning:hover { background: #ffe082; }
+        .user-card .btn.danger { color: var(--point); border-color: #ffcdc7; }
+        .user-card .btn.danger:hover { background: var(--point-bg); }
+        .user-card .btn.success { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+        .user-card .btn.success:hover { background: #a5d6a7; }
+        
+        /* 사용자 상세 모달 */
+        .user-detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10500; align-items: center; justify-content: center; padding: 20px; }
+        .user-detail-modal.active { display: flex; }
+        .user-detail-box { background: var(--surface); border-radius: 14px; padding: 24px; max-width: 720px; width: 100%; max-height: 85vh; overflow-y: auto; }
+        .user-detail-box .close-btn { float: right; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--sub-text); line-height: 1; }
+        .user-detail-box h2 { font-size: 18px; font-weight: 900; margin-bottom: 4px; clear: both; padding-top: 0; }
+        .user-detail-box .sub { font-size: 12px; color: var(--sub-text); margin-bottom: 16px; }
+        .user-detail-box .section { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+        .user-detail-box .section:last-child { border-bottom: none; }
+        .user-detail-box .section-title { font-size: 12px; font-weight: 800; color: var(--sub-text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .user-detail-box .info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+        .user-detail-box .info-row .label { color: var(--sub-text); font-weight: 600; }
+        .user-detail-box .info-row .value { color: var(--text); font-weight: 700; word-break: break-all; text-align: right; max-width: 60%; }
+        .user-detail-box .post-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; }
+        .user-detail-box .thumb { aspect-ratio: 1; border-radius: 6px; overflow: hidden; cursor: pointer; position: relative; background: var(--bg); }
+        .user-detail-box .thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .user-detail-box .thumb.hidden::after { content: '🙈'; position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        
+        /* 닉네임 변경 모달 */
+        .nickname-edit-input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; margin-top: 8px; }
+        .nickname-edit-input:focus { outline: none; border-color: var(--point); }
+        .sidebar .footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+        .sidebar .user-info { font-size: 11px; color: var(--sub-text); margin-bottom: 8px; word-break: break-all; }
+        .sidebar .user-info strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 12px; }
+        .sidebar .logout-btn { width: 100%; padding: 8px; background: transparent; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; color: var(--sub-text); }
+        .sidebar .logout-btn:hover { background: var(--bg); }
+        
+        /* 메인 컨텐츠 */
+        .main { flex: 1; padding: 24px 32px; max-width: 100%; overflow-x: hidden; }
+        .page-title { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+        .page-desc { font-size: 13px; color: var(--sub-text); margin-bottom: 24px; }
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+        
+        /* 통계 카드 */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); }
+        .stat-card .label { font-size: 11px; color: var(--sub-text); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .stat-card .value { font-size: 28px; font-weight: 900; color: var(--text); line-height: 1; }
+        .stat-card .delta { font-size: 11px; color: var(--success); font-weight: 700; margin-top: 6px; }
+        .stat-card .delta.neutral { color: var(--sub-text); }
+        .stat-card .icon { float: right; font-size: 20px; opacity: 0.6; }
+        
+        /* 섹션 박스 */
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .panel-title { font-size: 14px; font-weight: 800; }
+        .panel-desc { font-size: 11px; color: var(--sub-text); margin-top: 2px; font-weight: 500; }
+        
+        /* 필터 바 */
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+        .filter-bar input[type="text"] { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface); flex: 1; min-width: 200px; }
+        .filter-bar input[type="text"]:focus { outline: none; border-color: var(--point); }
+        .filter-bar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface); cursor: pointer; }
+        .filter-bar .count { font-size: 12px; color: var(--sub-text); margin-left: auto; }
+        
+        /* 게시물 그리드 */
+        .post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+        .post-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: all 0.15s; }
+        .post-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .post-card .img-wrap { position: relative; width: 100%; padding-bottom: 100%; background: var(--bg); overflow: hidden; }
+        .post-card img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .post-card .img-wrap .reported-badge { position: absolute; top: 8px; left: 8px; background: var(--point); color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
+        .post-card .info { padding: 10px 12px; }
+        .post-card .author { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .post-card .caption { font-size: 11px; color: var(--sub-text); margin: 4px 0; height: 28px; overflow: hidden; line-height: 1.3; }
+        .post-card .stats { display: flex; gap: 8px; font-size: 11px; color: var(--sub-text); margin-bottom: 8px; }
+        .post-card .stats span { display: flex; align-items: center; gap: 2px; }
+        .post-card .actions { display: flex; gap: 6px; }
+        .post-card .btn { flex: 1; padding: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+        .post-card .btn:hover { background: var(--bg); }
+        .post-card .btn.danger { color: var(--point); border-color: #ffcdc7; }
+        .post-card .btn.danger:hover { background: var(--point-bg); }
+        
+        /* 빈 상태 */
+        .empty { text-align: center; padding: 60px 20px; color: var(--sub-text); }
+        .empty .big { font-size: 40px; margin-bottom: 12px; }
+        .empty .text { font-size: 13px; }
+        
+        /* 로딩 */
+        .loading { text-align: center; padding: 40px; color: var(--sub-text); font-size: 13px; }
+        .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--point); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* 토스트 */
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; opacity: 0; transition: all 0.3s; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        
+        /* 확인 모달 */
+        .confirm-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
+        .confirm-modal.active { display: flex; }
+        .confirm-box { background: var(--surface); border-radius: 14px; padding: 24px; max-width: 400px; width: 100%; }
+        .confirm-box h3 { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+        .confirm-box p { font-size: 13px; color: var(--sub-text); line-height: 1.6; margin-bottom: 18px; white-space: pre-line; }
+        .confirm-box .btns { display: flex; gap: 8px; justify-content: flex-end; }
+        .confirm-box button { padding: 9px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; }
+        .confirm-box .cancel { background: var(--bg); color: var(--text); }
+        .confirm-box .confirm { background: var(--point); color: #fff; }
+        .confirm-box .confirm:hover { background: #d92c22; }
+        
+        /* 이미지 뷰어 */
+        .img-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 11000; align-items: center; justify-content: center; cursor: pointer; }
+        .img-viewer.active { display: flex; }
+        .img-viewer img { max-width: 90vw; max-height: 90vh; object-fit: contain; }
+        .img-viewer .close-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; font-size: 32px; }
+        
+        /* 모바일 대응 */
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .sidebar .logo-area .logo { font-size: 14px; }
+            .sidebar .logo span { display: block; }
+            .sidebar .badge { display: none; }
+            .sidebar .nav-item { padding: 12px; justify-content: center; font-size: 0; gap: 0; }
+            .sidebar .nav-item .icon { font-size: 16px; }
+            .sidebar .footer .user-info { font-size: 10px; }
+            .sidebar .footer .user-info strong { font-size: 10px; }
+            .main { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div class="login-screen" id="login-screen">
+    <div class="login-box">
+        <div class="logo">B-MAT <span>LOG.</span></div>
+        <div class="badge-wrap"><span class="badge">ADMIN</span></div>
+        <div class="desc">관리자 권한이 있는 계정으로<br>로그인해주세요</div>
+        
+        <div class="field">
+            <label>이메일</label>
+            <input type="email" id="email-input" autocomplete="email" placeholder="admin@example.com">
+        </div>
+        <div class="field">
+            <label>비밀번호</label>
+            <input type="password" id="password-input" autocomplete="current-password">
+        </div>
+        
+        <div class="login-error" id="login-error"></div>
+        
+        <button class="primary-btn" id="login-btn" onclick="adminLogin()">로그인</button>
+        
+        <a href="index.html" class="back-link">← 일반 앱으로 돌아가기</a>
+    </div>
+</div>
+
+<!-- 어드민 레이아웃 -->
+<div class="admin-layout" id="admin-layout">
+    <!-- 사이드바 -->
+    <aside class="sidebar">
+        <div class="logo-area">
+            <div class="logo">B-MAT <span>LOG.</span></div>
+            <span class="badge">ADMIN</span>
+        </div>
+        <nav>
+            <div class="nav-item active" data-page="dashboard" onclick="changePage('dashboard')">
+                <span class="icon">📊</span><span>대시보드</span>
+            </div>
+            <div class="nav-item" data-page="posts" onclick="changePage('posts')">
+                <span class="icon">📷</span><span>게시물 관리</span>
+            </div>
+            <div class="nav-item" data-page="users" onclick="changePage('users')">
+                <span class="icon">👥</span><span>사용자 관리</span>
+            </div>
+            <div class="nav-item" data-page="reports" onclick="changePage('reports')">
+                <span class="icon">🚨</span><span>신고 관리</span>
+                <span class="nav-badge" id="report-nav-badge" style="display:none;">0</span>
+            </div>
+            <div class="nav-item super-admin-only" data-page="admins" onclick="changePage('admins')" style="display:none;">
+                <span class="icon">👑</span><span>어드민 관리</span>
+            </div>
+        </nav>
+        <div class="footer">
+            <div class="user-info">
+                <strong id="admin-email">-</strong>
+                <span id="admin-uid">-</span>
+            </div>
+            <button class="logout-btn" onclick="adminLogout()">로그아웃</button>
+        </div>
+    </aside>
+    
+    <!-- 메인 -->
+    <main class="main">
+        <!-- 대시보드 -->
+        <section class="page-section active" id="page-dashboard">
+            <h1 class="page-title">대시보드</h1>
+            <div class="page-desc">B-MAT LOG 운영 현황 한눈에 보기</div>
+            
+            <div id="stats-loading" class="loading">
+                <div class="spinner"></div>
+                <div style="margin-top:10px;">통계 불러오는 중...</div>
+            </div>
+            
+            <div id="stats-container" style="display:none;">
+                <div class="stats-grid" id="stats-grid"></div>
+                
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-title">📈 최근 24시간 활동</div>
+                            <div class="panel-desc">최근 하루 동안의 활동 요약</div>
+                        </div>
+                        <button class="btn" onclick="loadDashboard()" style="padding:6px 12px; font-size:11px; background:var(--bg); border:1px solid var(--border); border-radius:6px; font-weight:700;">🔄 새로고침</button>
+                    </div>
+                    <div class="stats-grid" id="recent-stats-grid"></div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-title">🔥 인기 게시물 TOP 5 (전체 누적)</div>
+                    <div class="panel-desc">좋아요 ×3 + 댓글 ×2 + 조회수 ×0.1</div>
+                    <div id="top-posts" style="margin-top:14px;"></div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-title">👑 활동왕 TOP 5 (게시물 수 기준)</div>
+                    <div id="top-users" style="margin-top:14px;"></div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 게시물 관리 -->
+        <section class="page-section" id="page-posts">
+            <h1 class="page-title">게시물 관리</h1>
+            <div class="page-desc">전체 게시물 조회 · 검색 · 삭제</div>
+            
+            <div class="filter-bar">
+                <input type="text" id="post-search" placeholder="🔍 작성자명 또는 캡션 검색..." oninput="filterPosts()">
+                <select id="post-sort" onchange="filterPosts()">
+                    <option value="latest">최신순</option>
+                    <option value="oldest">오래된순</option>
+                    <option value="likes">좋아요 많은순</option>
+                    <option value="dislikes">싫어요 많은순</option>
+                    <option value="comments">댓글 많은순</option>
+                    <option value="views">조회수 많은순</option>
+                    <option value="reported">신고된 것 먼저</option>
+                </select>
+                <select id="post-period" onchange="filterPosts()">
+                    <option value="all">전체 기간</option>
+                    <option value="day">최근 24시간</option>
+                    <option value="week">최근 7일</option>
+                    <option value="month">최근 30일</option>
+                </select>
+                <select id="post-visibility" onchange="filterPosts()">
+                    <option value="all">전체</option>
+                    <option value="visible">공개만</option>
+                    <option value="hidden">숨김만</option>
+                </select>
+                <span class="count" id="post-count">0개</span>
+            </div>
+            
+            <div id="posts-loading" class="loading">
+                <div class="spinner"></div>
+                <div style="margin-top:10px;">게시물 불러오는 중...</div>
+            </div>
+            
+            <div class="post-grid" id="posts-grid" style="display:none;"></div>
+            <div id="posts-empty" style="display:none;" class="empty">
+                <div class="big">📭</div>
+                <div class="text">조건에 맞는 게시물이 없어요</div>
+            </div>
+        </section>
+        
+        <!-- 사용자 관리 -->
+        <section class="page-section" id="page-users">
+            <h1 class="page-title">사용자 관리</h1>
+            <div class="page-desc">전체 사용자 조회 · 검색 · 닉네임 변경 · 차단</div>
+            
+            <div class="filter-bar">
+                <input type="text" id="user-search" placeholder="🔍 닉네임/이메일/UID 검색..." oninput="renderUsers()">
+                <select id="user-sort" onchange="renderUsers()">
+                    <option value="recent">최근 가입순</option>
+                    <option value="oldest">오래된 가입순</option>
+                    <option value="posts">게시물 많은순</option>
+                    <option value="likes">좋아요 많은순</option>
+                    <option value="reports">받은 신고 많은순</option>
+                    <option value="name">닉네임순</option>
+                </select>
+                <select id="user-filter" onchange="renderUsers()">
+                    <option value="all">전체</option>
+                    <option value="email">이메일 가입자</option>
+                    <option value="anonymous">익명 사용자</option>
+                    <option value="admin">어드민</option>
+                    <option value="banned">차단된 사용자</option>
+                    <option value="reported">신고받은 사용자</option>
+                </select>
+                <span class="count" id="user-count-summary">-</span>
+            </div>
+            
+            <div id="users-loading" class="loading">
+                <div class="spinner"></div>
+                <div style="margin-top:10px;">사용자 목록 불러오는 중...</div>
+            </div>
+            
+            <div id="users-content" style="display:none;">
+                <div class="user-list" id="user-list"></div>
+            </div>
+        </section>
+        
+        <!-- 신고 관리 -->
+        <section class="page-section" id="page-reports">
+            <h1 class="page-title">신고 관리</h1>
+            <div class="page-desc">신고된 게시물·댓글 검토 및 처리</div>
+            
+            <div class="filter-bar">
+                <select id="report-min-count" onchange="renderReports()">
+                    <option value="1">신고 1회 이상</option>
+                    <option value="2">신고 2회 이상</option>
+                    <option value="3">신고 3회 이상</option>
+                    <option value="5">신고 5회 이상 (긴급)</option>
+                </select>
+                <select id="report-sort" onchange="renderReports()">
+                    <option value="count">신고 많은순</option>
+                    <option value="latest">최근 게시물순</option>
+                </select>
+                <button class="btn" style="padding:8px 14px; font-size:12px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-weight:700;" onclick="loadReports()">🔄 새로고침</button>
+                <span class="count" id="report-count-summary">-</span>
+            </div>
+            
+            <div id="reports-loading" class="loading">
+                <div class="spinner"></div>
+                <div style="margin-top:10px;">신고 데이터 불러오는 중...</div>
+            </div>
+            
+            <div id="reports-content" style="display:none;">
+                <!-- 신고된 게시물 -->
+                <div class="report-section">
+                    <div class="report-section-title">
+                        📷 신고된 게시물
+                        <span class="count" id="reported-posts-count">0</span>
+                    </div>
+                    <div id="reported-posts-list"></div>
+                </div>
+                
+                <!-- 신고된 댓글 -->
+                <div class="report-section">
+                    <div class="report-section-title">
+                        💬 신고된 댓글
+                        <span class="count" id="reported-comments-count">0</span>
+                    </div>
+                    <div id="reported-comments-list"></div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 어드민 관리 (슈퍼 어드민 전용) -->
+        <section class="page-section" id="page-admins">
+            <h1 class="page-title">어드민 관리</h1>
+            <div class="page-desc">어드민 권한 부여 및 회수 (슈퍼 어드민 전용)</div>
+            
+            <div class="info-box">
+                <strong>👑 슈퍼 어드민 vs 🛡️ 어드민</strong>
+                슈퍼 어드민은 어드민 권한을 부여/회수할 수 있어요. 일반 어드민은 게시물·댓글·신고를 관리할 수 있지만 다른 사람의 권한은 변경할 수 없어요. 권한은 신중하게 부여해주세요.
+            </div>
+            
+            <div class="filter-bar">
+                <input type="text" id="admin-search" placeholder="🔍 이메일 또는 닉네임 검색..." oninput="renderAdmins()">
+                <button class="btn" style="padding:8px 14px; font-size:12px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-weight:700;" onclick="loadAdmins()">🔄 새로고침</button>
+            </div>
+            
+            <div id="admins-loading" class="loading">
+                <div class="spinner"></div>
+                <div style="margin-top:10px;">사용자 목록 불러오는 중...</div>
+            </div>
+            
+            <div id="admins-content" style="display:none;">
+                <!-- 현재 어드민 -->
+                <div class="report-section">
+                    <div class="report-section-title">
+                        🛡️ 현재 어드민
+                        <span class="count" id="current-admins-count">0</span>
+                    </div>
+                    <div class="admin-list" id="current-admins-list"></div>
+                </div>
+                
+                <!-- 이메일 사용자 -->
+                <div class="report-section" style="margin-top:24px;">
+                    <div class="report-section-title">
+                        ✉️ 이메일 가입 사용자
+                        <span class="count" id="email-users-count">0</span>
+                    </div>
+                    <div class="admin-list" id="email-users-list"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- 사용자 상세 모달 -->
+<div class="user-detail-modal" id="user-detail-modal">
+    <div class="user-detail-box">
+        <button class="close-btn" onclick="closeUserDetail()">✕</button>
+        <div id="user-detail-content"></div>
+    </div>
+</div>
+
+<!-- 닉네임 변경 모달 -->
+<div class="confirm-modal" id="nickname-edit-modal">
+    <div class="confirm-box">
+        <h3>✏️ 닉네임 강제 변경</h3>
+        <p id="nickname-edit-msg"></p>
+        <input type="text" id="nickname-edit-input" class="nickname-edit-input" maxlength="10" placeholder="새 닉네임 (최대 10자)">
+        <div class="btns" style="margin-top:14px;">
+            <button class="cancel" onclick="closeNicknameEdit()">취소</button>
+            <button class="confirm" id="nickname-edit-confirm-btn">변경</button>
+        </div>
+    </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<!-- 확인 모달 -->
+<div class="confirm-modal" id="confirm-modal">
+    <div class="confirm-box">
+        <h3 id="confirm-title">확인</h3>
+        <p id="confirm-msg"></p>
+        <div class="btns">
+            <button class="cancel" onclick="closeConfirm()">취소</button>
+            <button class="confirm" id="confirm-ok-btn">확인</button>
+        </div>
+    </div>
+</div>
+
+<!-- 이미지 뷰어 -->
+<div class="img-viewer" id="img-viewer" onclick="closeImgViewer()">
+    <button class="close-btn" onclick="closeImgViewer()">✕</button>
+    <img id="img-viewer-img" alt="">
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, collectionGroup, getDocs, doc, getDoc, deleteDoc, updateDoc, writeBatch, query, orderBy, limit, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDd8hLx5f0m-tvTByZzElB1vQDh_JBIw7g",
+        authDomain: "bmat-log.firebaseapp.com",
+        projectId: "bmat-log",
+        storageBucket: "bmat-log.firebasestorage.app",
+        messagingSenderId: "131717530577",
+        appId: "1:131717530577:web:1e12f82a7490b6c81b16f0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+    
+    let currentAdmin = null;
+    let allPosts = [];
+    let allUsers = new Map();
+    
+    // ============ 유틸 ============
+    function escapeHtml(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    
+    function formatTime(ts) {
+        if (!ts) return '-';
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const now = Date.now();
+        const diff = now - d.getTime();
+        const mins = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        if (mins < 1) return '방금';
+        if (mins < 60) return `${mins}분 전`;
+        if (hours < 24) return `${hours}시간 전`;
+        if (days < 7) return `${days}일 전`;
+        return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+    }
+    
+    function formatNum(n) {
+        return (n || 0).toLocaleString('ko-KR');
+    }
+    
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+    
+    let confirmCallback = null;
+    function showConfirm(title, msg, callback) {
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-msg').textContent = msg;
+        document.getElementById('confirm-ok-btn').onclick = () => {
+            const cb = confirmCallback;
+            closeConfirm();
+            if (cb) cb();
+        };
+        confirmCallback = callback;
+        document.getElementById('confirm-modal').classList.add('active');
+    }
+    window.closeConfirm = function() {
+        document.getElementById('confirm-modal').classList.remove('active');
+        confirmCallback = null;
+    };
+    
+    window.openImgViewer = function(url) {
+        document.getElementById('img-viewer-img').src = url;
+        document.getElementById('img-viewer').classList.add('active');
+    };
+    window.closeImgViewer = function() {
+        document.getElementById('img-viewer').classList.remove('active');
+    };
+    
+    // ============ 인증 ============
+    window.adminLogin = async function() {
+        const email = document.getElementById('email-input').value.trim();
+        const password = document.getElementById('password-input').value;
+        const errorEl = document.getElementById('login-error');
+        const btn = document.getElementById('login-btn');
+        
+        errorEl.classList.remove('active');
+        
+        if (!email || !password) {
+            errorEl.textContent = '이메일과 비밀번호를 모두 입력해주세요.';
+            errorEl.classList.add('active');
+            return;
+        }
+        
+        btn.disabled = true;
+        btn.textContent = '로그인 중...';
+        
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // onAuthStateChanged가 isAdmin 체크함
+        } catch (e) {
+            console.error(e);
+            const map = {
+                'auth/user-not-found': '가입되지 않은 이메일입니다.',
+                'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
+                'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
+                'auth/invalid-email': '올바른 이메일 형식이 아닙니다.',
+                'auth/too-many-requests': '시도가 너무 많아요. 잠시 후 다시 시도해주세요.',
+                'auth/network-request-failed': '네트워크 오류가 발생했어요.'
+            };
+            errorEl.textContent = map[e.code] || ('오류: ' + (e.message || e.code));
+            errorEl.classList.add('active');
+            btn.disabled = false;
+            btn.textContent = '로그인';
+        }
+    };
+    
+    window.adminLogout = async function() {
+        showConfirm('로그아웃', '로그아웃 하시겠어요?', async () => {
+            try {
+                await signOut(auth);
+                location.reload();
+            } catch (e) {
+                showToast('❌ 로그아웃 실패');
+            }
+        });
+    };
+    
+    // Enter 키로 로그인
+    document.addEventListener('keydown', (e) => {
+        if (e.isComposing || e.keyCode === 229) return;
+        if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) {
+            const target = e.target;
+            if (target && (target.id === 'email-input' || target.id === 'password-input')) {
+                e.preventDefault();
+                adminLogin();
+            }
+        }
+    });
+    
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('admin-layout').classList.remove('active');
+            return;
+        }
+        
+        // isAdmin 체크
+        try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (!userDoc.exists() || userDoc.data().isAdmin !== true) {
+                // 어드민 권한 없음
+                await signOut(auth);
+                const errorEl = document.getElementById('login-error');
+                errorEl.textContent = '⛔ 관리자 권한이 없는 계정입니다.';
+                errorEl.classList.add('active');
+                document.getElementById('login-btn').disabled = false;
+                document.getElementById('login-btn').textContent = '로그인';
+                return;
+            }
+            
+            // 어드민 로그인 성공
+            currentAdmin = { uid: user.uid, email: user.email, ...userDoc.data() };
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-layout').classList.add('active');
+            document.getElementById('admin-email').textContent = user.email || '관리자';
+            document.getElementById('admin-uid').textContent = user.uid.substring(0, 14) + '...';
+            
+            // 슈퍼 어드민이면 어드민 관리 메뉴 표시
+            if (currentAdmin.isSuperAdmin === true) {
+                document.querySelectorAll('.super-admin-only').forEach(el => el.style.display = '');
+            }
+            
+            // 데이터 로드
+            await loadAllData();
+            loadDashboard();
+            // 백그라운드에서 신고 뱃지 갱신 (사이드바에 카운트 표시용)
+            loadReportsForBadge();
+        } catch (e) {
+            console.error('권한 확인 실패:', e);
+            const errorEl = document.getElementById('login-error');
+            errorEl.textContent = '권한 확인 실패: ' + e.message;
+            errorEl.classList.add('active');
+            await signOut(auth);
+        }
+    });
+    
+    // 사이드바 뱃지 갱신용 (실제 페이지 진입은 안 함)
+    async function loadReportsForBadge() {
+        try {
+            // 신고된 댓글 카운트만 계산
+            reportedComments = [];
+            const allCommentsSnap = await getDocs(collectionGroup(db, 'comments'));
+            allCommentsSnap.forEach(d => {
+                const c = d.data();
+                if ((c.reportCount || 0) >= 1) {
+                    const postRef = d.ref.parent.parent;
+                    reportedComments.push({
+                        postId: postRef ? postRef.id : null,
+                        commentId: d.id,
+                        comment: c,
+                        post: null
+                    });
+                }
+            });
+            updateReportNavBadge();
+        } catch (e) {
+            console.warn('신고 뱃지 갱신 실패:', e);
+        }
+    }
+    
+    // ============ 데이터 로드 ============
+    async function loadAllData() {
+        try {
+            // 게시물 전체
+            const postsSnap = await getDocs(query(collection(db, 'posts'), orderBy('createdAt', 'desc')));
+            allPosts = postsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            
+            // 사용자 전체
+            const usersSnap = await getDocs(collection(db, 'users'));
+            allUsers.clear();
+            usersSnap.forEach(d => {
+                allUsers.set(d.id, { id: d.id, ...d.data() });
+            });
+            
+            console.log(`로드: 게시물 ${allPosts.length}개, 사용자 ${allUsers.size}명`);
+        } catch (e) {
+            console.error('데이터 로드 실패:', e);
+            showToast('❌ 데이터 로드 실패: ' + e.message);
+        }
+    }
+    
+    // ============ 페이지 전환 ============
+    window.changePage = function(page) {
+        // 어드민 관리는 슈퍼 어드민만 접근 가능
+        if (page === 'admins' && !currentAdmin?.isSuperAdmin) {
+            showToast('⛔ 슈퍼 어드민만 접근 가능합니다');
+            return;
+        }
+        
+        document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelector(`.sidebar .nav-item[data-page="${page}"]`)?.classList.add('active');
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`page-${page}`)?.classList.add('active');
+        
+        if (page === 'posts') renderPosts();
+        if (page === 'dashboard') loadDashboard();
+        if (page === 'reports') loadReports();
+        if (page === 'admins') loadAdmins();
+        if (page === 'users') loadUsers();
+    };
+    
+    // ============ 대시보드 ============
+    window.loadDashboard = async function() {
+        document.getElementById('stats-loading').style.display = 'block';
+        document.getElementById('stats-container').style.display = 'none';
+        
+        await loadAllData();
+        
+        // 통계 계산
+        const totalPosts = allPosts.length;
+        const totalUsers = allUsers.size;
+        let totalLikes = 0, totalDislikes = 0, totalComments = 0, totalViews = 0;
+        allPosts.forEach(p => {
+            totalLikes += (p.likes || 0);
+            totalDislikes += (p.dislikes || 0);
+            totalComments += (p.commentCount || 0);
+            totalViews += (p.views || 0);
+        });
+        
+        // 24시간 통계
+        const dayMs = 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        const recentPosts = allPosts.filter(p => p.createdAt && p.createdAt.toDate && (now - p.createdAt.toDate().getTime()) <= dayMs);
+        const recentUsers = Array.from(allUsers.values()).filter(u => u.createdAt && u.createdAt.toDate && (now - u.createdAt.toDate().getTime()) <= dayMs);
+        let recentLikes = 0, recentComments = 0;
+        recentPosts.forEach(p => {
+            recentLikes += (p.likes || 0);
+            recentComments += (p.commentCount || 0);
+        });
+        
+        // 통계 카드 렌더링
+        const grid = document.getElementById('stats-grid');
+        grid.innerHTML = `
+            <div class="stat-card">
+                <span class="icon">👥</span>
+                <div class="label">총 사용자</div>
+                <div class="value">${formatNum(totalUsers)}</div>
+                <div class="delta neutral">전체 가입자</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">📷</span>
+                <div class="label">총 게시물</div>
+                <div class="value">${formatNum(totalPosts)}</div>
+                <div class="delta neutral">전체 게시물</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">❤️</span>
+                <div class="label">총 좋아요</div>
+                <div class="value">${formatNum(totalLikes)}</div>
+                <div class="delta neutral">누적 좋아요</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">👎</span>
+                <div class="label">총 싫어요</div>
+                <div class="value">${formatNum(totalDislikes)}</div>
+                <div class="delta neutral">누적 싫어요</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">💬</span>
+                <div class="label">총 댓글</div>
+                <div class="value">${formatNum(totalComments)}</div>
+                <div class="delta neutral">누적 댓글</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">👁️</span>
+                <div class="label">총 조회수</div>
+                <div class="value">${formatNum(totalViews)}</div>
+                <div class="delta neutral">누적 조회</div>
+            </div>
+        `;
+        
+        // 24시간 통계
+        const recentGrid = document.getElementById('recent-stats-grid');
+        recentGrid.innerHTML = `
+            <div class="stat-card">
+                <span class="icon">🆕</span>
+                <div class="label">신규 가입</div>
+                <div class="value">${formatNum(recentUsers.length)}</div>
+                <div class="delta">최근 24시간</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">📸</span>
+                <div class="label">새 게시물</div>
+                <div class="value">${formatNum(recentPosts.length)}</div>
+                <div class="delta">최근 24시간</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">❤️</span>
+                <div class="label">새 좋아요</div>
+                <div class="value">${formatNum(recentLikes)}</div>
+                <div class="delta">신규 게시물 기준</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">💬</span>
+                <div class="label">새 댓글</div>
+                <div class="value">${formatNum(recentComments)}</div>
+                <div class="delta">신규 게시물 기준</div>
+            </div>
+        `;
+        
+        // 인기 게시물 TOP 5 (숨김 게시물 제외)
+        const scored = allPosts.filter(p => p.hidden !== true).map(p => ({
+            ...p,
+            _score: (p.likes || 0) * 3 + (p.commentCount || 0) * 2 + (p.views || 0) * 0.1
+        })).filter(p => p._score > 0).sort((a, b) => b._score - a._score).slice(0, 5);
+        
+        const topPostsEl = document.getElementById('top-posts');
+        if (scored.length === 0) {
+            topPostsEl.innerHTML = '<div class="empty"><div class="text" style="font-size:12px;">아직 인기 게시물이 없어요</div></div>';
+        } else {
+            topPostsEl.innerHTML = scored.map((p, i) => `
+                <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div style="font-size:16px; font-weight:900; width:24px; text-align:center; color:${i===0?'var(--gold)':i===1?'#c0c0c0':i===2?'#cd7f32':'var(--sub-text)'};">${i+1}</div>
+                    <img src="${p.imgUrl}" style="width:48px; height:48px; border-radius:6px; object-fit:cover; cursor:pointer;" onclick="openImgViewer('${p.imgUrl}')">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:13px; font-weight:700;">@${escapeHtml(p.authorName || '익명')}</div>
+                        <div style="font-size:11px; color:var(--sub-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p.caption || '제목 없음')}</div>
+                    </div>
+                    <div style="font-size:11px; color:var(--sub-text); text-align:right; flex-shrink:0;">
+                        <div>❤️${p.likes||0} 💬${p.commentCount||0}</div>
+                        <div style="font-weight:800; color:var(--point); font-size:13px; margin-top:2px;">${Math.round(p._score)}점</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 활동왕 TOP 5
+        const userMap = new Map();
+        allPosts.forEach(p => {
+            if (!p.authorId) return;
+            if (!userMap.has(p.authorId)) {
+                userMap.set(p.authorId, { uid: p.authorId, name: p.authorName || '익명', posts: 0, likes: 0 });
+            }
+            const u = userMap.get(p.authorId);
+            u.posts += 1;
+            u.likes += (p.likes || 0);
+            if (p.authorName) u.name = p.authorName;
+        });
+        const topUsers = Array.from(userMap.values()).sort((a, b) => b.posts - a.posts || b.likes - a.likes).slice(0, 5);
+        
+        const topUsersEl = document.getElementById('top-users');
+        if (topUsers.length === 0) {
+            topUsersEl.innerHTML = '<div class="empty"><div class="text" style="font-size:12px;">아직 활동 데이터가 없어요</div></div>';
+        } else {
+            topUsersEl.innerHTML = topUsers.map((u, i) => `
+                <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div style="font-size:16px; font-weight:900; width:24px; text-align:center; color:${i===0?'var(--gold)':i===1?'#c0c0c0':i===2?'#cd7f32':'var(--sub-text)'};">${i+1}</div>
+                    <div style="flex:1;">
+                        <div style="font-size:13px; font-weight:700;">@${escapeHtml(u.name)}</div>
+                        <div style="font-size:11px; color:var(--sub-text);">UID: ${u.uid.substring(0, 16)}...</div>
+                    </div>
+                    <div style="font-size:11px; color:var(--sub-text); text-align:right;">
+                        <div>📷 ${u.posts}개</div>
+                        <div>❤️ ${u.likes}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        document.getElementById('stats-loading').style.display = 'none';
+        document.getElementById('stats-container').style.display = 'block';
+    };
+    
+    // ============ 게시물 관리 ============
+    let filteredPosts = [];
+    
+    function renderPosts() {
+        document.getElementById('posts-loading').style.display = 'none';
+        filterPosts();
+    }
+    
+    window.filterPosts = function() {
+        const search = document.getElementById('post-search').value.trim().toLowerCase();
+        const sort = document.getElementById('post-sort').value;
+        const period = document.getElementById('post-period').value;
+        const visibility = document.getElementById('post-visibility')?.value || 'all';
+        
+        // 기간 필터
+        let filtered = [...allPosts];
+        if (period !== 'all') {
+            const periodMs = period === 'day' ? 24*60*60*1000 : period === 'week' ? 7*24*60*60*1000 : 30*24*60*60*1000;
+            const now = Date.now();
+            filtered = filtered.filter(p => p.createdAt && p.createdAt.toDate && (now - p.createdAt.toDate().getTime()) <= periodMs);
+        }
+        
+        // 공개/숨김 필터
+        if (visibility === 'visible') {
+            filtered = filtered.filter(p => p.hidden !== true);
+        } else if (visibility === 'hidden') {
+            filtered = filtered.filter(p => p.hidden === true);
+        }
+        
+        // 검색
+        if (search) {
+            filtered = filtered.filter(p => 
+                (p.authorName || '').toLowerCase().includes(search) ||
+                (p.caption || '').toLowerCase().includes(search)
+            );
+        }
+        
+        // 정렬
+        if (sort === 'latest') filtered.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        else if (sort === 'oldest') filtered.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+        else if (sort === 'likes') filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+        else if (sort === 'dislikes') filtered.sort((a, b) => (b.dislikes || 0) - (a.dislikes || 0));
+        else if (sort === 'comments') filtered.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0));
+        else if (sort === 'views') filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
+        else if (sort === 'reported') filtered.sort((a, b) => (b.reportCount || 0) - (a.reportCount || 0) || ((b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)));
+        
+        filteredPosts = filtered;
+        document.getElementById('post-count').textContent = `${formatNum(filtered.length)}개`;
+        
+        const grid = document.getElementById('posts-grid');
+        const empty = document.getElementById('posts-empty');
+        
+        if (filtered.length === 0) {
+            grid.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+        
+        empty.style.display = 'none';
+        grid.style.display = 'grid';
+        
+        grid.innerHTML = filtered.map(p => {
+            const reportCount = p.reportCount || 0;
+            const isHidden = p.hidden === true;
+            const hiddenStyle = isHidden ? 'opacity:0.55;' : '';
+            const toggleBtn = isHidden
+                ? `<button class="btn" onclick="confirmAdminUnhidePost('${p.id}')" title="숨김 해제">👁️ 해제</button>`
+                : `<button class="btn" onclick="confirmAdminHidePost('${p.id}')" title="숨기기">🙈 숨김</button>`;
+            return `
+                <div class="post-card" data-post-id="${p.id}" style="${hiddenStyle}">
+                    <div class="img-wrap" onclick="openImgViewer('${p.imgUrl}')">
+                        <img src="${p.imgUrl}" alt="">
+                        ${reportCount > 0 ? `<div class="reported-badge">🚨 신고 ${reportCount}</div>` : ''}
+                        ${isHidden ? `<div class="reported-badge" style="background:#666; left:auto; right:8px;">🙈 숨김</div>` : ''}
+                    </div>
+                    <div class="info">
+                        <div class="author">@${escapeHtml(p.authorName || '익명')}</div>
+                        <div class="caption">${escapeHtml(p.caption || '(캡션 없음)')}</div>
+                        <div class="stats">
+                            <span>❤️ ${p.likes || 0}</span>
+                            <span>👎 ${p.dislikes || 0}</span>
+                            <span>💬 ${p.commentCount || 0}</span>
+                            <span>👁️ ${p.views || 0}</span>
+                        </div>
+                        <div style="font-size:10px; color:var(--sub-text); margin-bottom:8px;">${formatTime(p.createdAt)}</div>
+                        <div class="actions">
+                            <button class="btn" onclick="viewPostDetail('${p.id}')">상세</button>
+                            ${toggleBtn}
+                            <button class="btn danger" onclick="confirmDeletePost('${p.id}')">🗑️ 삭제</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+    
+    window.viewPostDetail = function(postId) {
+        const p = allPosts.find(p => p.id === postId);
+        if (!p) return;
+        const author = allUsers.get(p.authorId);
+        const detail = `
+[게시물 상세]
+
+작성자: @${p.authorName || '익명'}
+UID: ${p.authorId}
+이메일: ${author?.email || '-'}
+가입일: ${author?.createdAt ? formatTime(author.createdAt) : '-'}
+
+작성 시각: ${p.createdAt ? p.createdAt.toDate().toLocaleString('ko-KR') : '-'}
+캡션: ${p.caption || '(없음)'}
+공개 상태: ${p.hidden === true ? '🙈 숨김' : '👁️ 공개'}
+
+좋아요: ${p.likes || 0}
+싫어요: ${p.dislikes || 0}
+댓글: ${p.commentCount || 0}
+조회수: ${p.views || 0}
+신고: ${p.reportCount || 0}회
+
+게시물 ID: ${p.id}
+        `.trim();
+        alert(detail);
+    };
+    
+    // ============ 어드민 - 숨김 처리 ============
+    window.confirmAdminHidePost = function(postId) {
+        const p = allPosts.find(p => p.id === postId);
+        if (!p) return;
+        showConfirm(
+            '🙈 게시물 숨기기',
+            `@${p.authorName || '익명'}님의 게시물을 숨길까요?\n\n• 일반 사용자 화면에서 안 보이게 됨\n• 작성자의 마이페이지에는 "숨김" 탭에 표시됨\n• 언제든 숨김 해제 가능`,
+            () => adminTogglePostHidden(postId, true)
+        );
+    };
+    
+    window.confirmAdminUnhidePost = function(postId) {
+        const p = allPosts.find(p => p.id === postId);
+        if (!p) return;
+        showConfirm(
+            '👁️ 숨김 해제',
+            `@${p.authorName || '익명'}님의 게시물을 다시 공개할까요?\n\n• 모든 사용자에게 다시 보이게 됨`,
+            () => adminTogglePostHidden(postId, false)
+        );
+    };
+    
+    async function adminTogglePostHidden(postId, hide) {
+        try {
+            await updateDoc(doc(db, 'posts', postId), { hidden: hide === true });
+            // 메모리 업데이트
+            const p = allPosts.find(p => p.id === postId);
+            if (p) p.hidden = hide === true;
+            
+            showToast(hide ? '🙈 숨김 처리 완료' : '👁️ 숨김 해제 완료');
+            filterPosts();
+        } catch (e) {
+            console.error('숨기기 실패:', e);
+            showToast('❌ 처리 실패: ' + e.message);
+        }
+    }
+    
+    window.confirmDeletePost = function(postId) {
+        const p = allPosts.find(p => p.id === postId);
+        if (!p) return;
+        showConfirm(
+            '🗑️ 게시물 삭제',
+            `@${p.authorName || '익명'}님의 게시물을 삭제할까요?\n캡션: ${p.caption || '(없음)'}\n\n⚠️ 사진과 댓글까지 모두 삭제되며 되돌릴 수 없습니다.`,
+            () => deletePostByAdmin(postId)
+        );
+    };
+    
+    async function deletePostByAdmin(postId) {
+        try {
+            const post = allPosts.find(p => p.id === postId);
+            if (!post) return;
+            
+            // 댓글 일괄 삭제
+            const commentsSnap = await getDocs(collection(db, 'posts', postId, 'comments'));
+            const batch = writeBatch(db);
+            commentsSnap.forEach(d => batch.delete(d.ref));
+            batch.delete(doc(db, 'posts', postId));
+            await batch.commit();
+            
+            // Storage 사진 삭제
+            if (post.storagePath) {
+                try { await deleteObject(ref(storage, post.storagePath)); } catch (e) { console.warn('Storage 삭제 실패:', e); }
+            }
+            
+            // 메모리에서 제거
+            allPosts = allPosts.filter(p => p.id !== postId);
+            
+            showToast('✅ 게시물 삭제 완료');
+            filterPosts();
+        } catch (e) {
+            console.error('삭제 실패:', e);
+            showToast('❌ 삭제 실패: ' + e.message);
+        }
+    }
+    
+    // ============ 신고 관리 ============
+    let reportedComments = []; // { postId, commentId, comment, post }
+    
+    window.loadReports = async function() {
+        document.getElementById('reports-loading').style.display = 'block';
+        document.getElementById('reports-content').style.display = 'none';
+        
+        try {
+            // 게시물은 이미 allPosts에 있음 (대시보드 로드 시)
+            // 단, 최신 데이터를 위해 다시 로드
+            await loadAllData();
+            
+            // 신고된 댓글: collectionGroup으로 모든 게시물의 댓글 한번에 조회
+            reportedComments = [];
+            try {
+                const commentsSnap = await getDocs(query(collectionGroup(db, 'comments'), where('reportCount', '>=', 1)));
+                commentsSnap.forEach(d => {
+                    const c = d.data();
+                    // d.ref.parent.parent가 게시물 doc ref
+                    const postRef = d.ref.parent.parent;
+                    const postId = postRef ? postRef.id : null;
+                    const post = postId ? allPosts.find(p => p.id === postId) : null;
+                    reportedComments.push({
+                        postId: postId,
+                        commentId: d.id,
+                        comment: c,
+                        post: post
+                    });
+                });
+            } catch (e) {
+                console.warn('신고 댓글 조회 실패 (인덱스 필요할 수 있음):', e);
+                // 인덱스 없을 시 fallback: 모든 댓글 가져와서 필터
+                try {
+                    const allCommentsSnap = await getDocs(collectionGroup(db, 'comments'));
+                    allCommentsSnap.forEach(d => {
+                        const c = d.data();
+                        if ((c.reportCount || 0) < 1) return;
+                        const postRef = d.ref.parent.parent;
+                        const postId = postRef ? postRef.id : null;
+                        const post = postId ? allPosts.find(p => p.id === postId) : null;
+                        reportedComments.push({
+                            postId: postId,
+                            commentId: d.id,
+                            comment: c,
+                            post: post
+                        });
+                    });
+                } catch (e2) {
+                    console.error('전체 댓글 조회 실패:', e2);
+                    showToast('⚠️ 신고된 댓글을 불러올 수 없어요');
+                }
+            }
+            
+            console.log(`신고: 게시물 ${allPosts.filter(p => (p.reportCount||0)>0).length}개, 댓글 ${reportedComments.length}개`);
+            
+            renderReports();
+            updateReportNavBadge();
+        } catch (e) {
+            console.error('신고 로드 실패:', e);
+            showToast('❌ 신고 로드 실패: ' + e.message);
+        } finally {
+            document.getElementById('reports-loading').style.display = 'none';
+            document.getElementById('reports-content').style.display = 'block';
+        }
+    };
+    
+    function updateReportNavBadge() {
+        const reportedPostsCount = allPosts.filter(p => (p.reportCount || 0) > 0).length;
+        const total = reportedPostsCount + reportedComments.length;
+        const badge = document.getElementById('report-nav-badge');
+        if (total > 0) {
+            badge.style.display = 'inline-block';
+            badge.textContent = total > 99 ? '99+' : total;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
+    window.renderReports = function() {
+        const minCount = parseInt(document.getElementById('report-min-count').value);
+        const sort = document.getElementById('report-sort').value;
+        
+        // 신고된 게시물 필터
+        let reportedPosts = allPosts.filter(p => (p.reportCount || 0) >= minCount);
+        if (sort === 'count') {
+            reportedPosts.sort((a, b) => (b.reportCount || 0) - (a.reportCount || 0));
+        } else {
+            reportedPosts.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        }
+        
+        // 신고된 댓글 필터
+        let filteredComments = reportedComments.filter(rc => (rc.comment.reportCount || 0) >= minCount);
+        if (sort === 'count') {
+            filteredComments.sort((a, b) => (b.comment.reportCount || 0) - (a.comment.reportCount || 0));
+        } else {
+            filteredComments.sort((a, b) => (b.comment.createdAt?.toMillis?.() || 0) - (a.comment.createdAt?.toMillis?.() || 0));
+        }
+        
+        // 카운트 표시
+        document.getElementById('reported-posts-count').textContent = reportedPosts.length;
+        document.getElementById('reported-comments-count').textContent = filteredComments.length;
+        document.getElementById('report-count-summary').textContent = `총 ${reportedPosts.length + filteredComments.length}건`;
+        
+        // 게시물 렌더링
+        const postsList = document.getElementById('reported-posts-list');
+        if (reportedPosts.length === 0) {
+            postsList.innerHTML = '<div class="empty"><div class="text" style="font-size:12px;">조건에 맞는 신고된 게시물이 없어요</div></div>';
+        } else {
+            postsList.innerHTML = reportedPosts.map(p => {
+                const reportCount = p.reportCount || 0;
+                const isUrgent = reportCount >= 5;
+                return `
+                    <div class="report-card ${isUrgent ? 'urgent' : ''}">
+                        <img class="thumb" src="${p.imgUrl}" alt="" onclick="openImgViewer('${p.imgUrl}')">
+                        <div class="info">
+                            <div class="top-row">
+                                <span class="report-badge ${isUrgent ? 'urgent' : ''}">🚨 신고 ${reportCount}회</span>
+                                <span class="author">@${escapeHtml(p.authorName || '익명')}</span>
+                                <span class="time">${formatTime(p.createdAt)}</span>
+                            </div>
+                            <div class="content-preview">${escapeHtml(p.caption || '(캡션 없음)')}</div>
+                            <div class="meta">❤️ ${p.likes||0} · 👎 ${p.dislikes||0} · 💬 ${p.commentCount||0} · 👁️ ${p.views||0} · UID: ${p.authorId?.substring(0,12)}...</div>
+                            <div class="actions">
+                                <button class="btn" onclick="viewPostDetail('${p.id}')">상세</button>
+                                <button class="btn primary" onclick="confirmDismissPostReport('${p.id}')">✅ 신고 무시</button>
+                                <button class="btn danger" onclick="confirmDeletePost('${p.id}')">🗑️ 삭제</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 댓글 렌더링
+        const commentsList = document.getElementById('reported-comments-list');
+        if (filteredComments.length === 0) {
+            commentsList.innerHTML = '<div class="empty"><div class="text" style="font-size:12px;">조건에 맞는 신고된 댓글이 없어요</div></div>';
+        } else {
+            commentsList.innerHTML = filteredComments.map(rc => {
+                const c = rc.comment;
+                const reportCount = c.reportCount || 0;
+                const isUrgent = reportCount >= 5;
+                const postCaption = rc.post ? (rc.post.caption || '(캡션 없음)') : '(게시물 정보 없음)';
+                const postThumb = rc.post ? rc.post.imgUrl : null;
+                return `
+                    <div class="report-card comment-card ${isUrgent ? 'urgent' : ''}">
+                        ${postThumb 
+                            ? `<img class="thumb" src="${postThumb}" alt="" onclick="openImgViewer('${postThumb}')" style="width:50px; height:50px;">`
+                            : `<div class="comment-icon">💬</div>`}
+                        <div class="info">
+                            <div class="top-row">
+                                <span class="report-badge ${isUrgent ? 'urgent' : ''}">🚨 신고 ${reportCount}회</span>
+                                <span class="author">@${escapeHtml(c.authorName || '익명')}</span>
+                                <span class="time">${formatTime(c.createdAt)}</span>
+                            </div>
+                            <div class="content-preview" style="background:var(--bg); padding:8px 10px; border-radius:6px;">"${escapeHtml(c.text || '')}"</div>
+                            <div class="meta">게시물: ${escapeHtml(postCaption.substring(0, 40))}${postCaption.length > 40 ? '...' : ''} · UID: ${c.authorId?.substring(0,12)}...</div>
+                            <div class="actions">
+                                <button class="btn primary" onclick="confirmDismissCommentReport('${rc.postId}', '${rc.commentId}')">✅ 신고 무시</button>
+                                <button class="btn danger" onclick="confirmDeleteCommentByAdmin('${rc.postId}', '${rc.commentId}', '${escapeHtml(c.authorName || '익명').replace(/'/g, "\\'")}')">🗑️ 삭제</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    };
+    
+    // 신고 무시: reportCount = 0, reportedBy = []
+    window.confirmDismissPostReport = function(postId) {
+        const p = allPosts.find(p => p.id === postId);
+        if (!p) return;
+        showConfirm(
+            '✅ 신고 무시',
+            `@${p.authorName || '익명'}님의 게시물 신고를 무시할까요?\n\n신고가 초기화되어 정상 게시물로 복구됩니다.`,
+            () => dismissPostReport(postId)
+        );
+    };
+    
+    async function dismissPostReport(postId) {
+        try {
+            await updateDoc(doc(db, 'posts', postId), {
+                reportCount: 0,
+                reportedBy: []
+            });
+            // 메모리 업데이트
+            const p = allPosts.find(p => p.id === postId);
+            if (p) { p.reportCount = 0; p.reportedBy = []; }
+            
+            showToast('✅ 신고 무시 처리 완료');
+            renderReports();
+            updateReportNavBadge();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 처리 실패: ' + e.message);
+        }
+    }
+    
+    window.confirmDismissCommentReport = function(postId, commentId) {
+        showConfirm(
+            '✅ 신고 무시',
+            '이 댓글의 신고를 무시할까요?\n\n신고가 초기화되어 정상 댓글로 복구됩니다.',
+            () => dismissCommentReport(postId, commentId)
+        );
+    };
+    
+    async function dismissCommentReport(postId, commentId) {
+        try {
+            await updateDoc(doc(db, 'posts', postId, 'comments', commentId), {
+                reportCount: 0,
+                reportedBy: []
+            });
+            // 메모리 업데이트
+            const rc = reportedComments.find(rc => rc.postId === postId && rc.commentId === commentId);
+            if (rc) { rc.comment.reportCount = 0; rc.comment.reportedBy = []; }
+            // 무시한 건 리스트에서 제거
+            reportedComments = reportedComments.filter(rc => !(rc.postId === postId && rc.commentId === commentId));
+            
+            showToast('✅ 신고 무시 처리 완료');
+            renderReports();
+            updateReportNavBadge();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 처리 실패: ' + e.message);
+        }
+    }
+    
+    window.confirmDeleteCommentByAdmin = function(postId, commentId, authorName) {
+        showConfirm(
+            '🗑️ 댓글 삭제',
+            `@${authorName}님의 댓글을 삭제할까요?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.\n게시물의 댓글 카운트도 -1 됩니다.`,
+            () => deleteCommentByAdmin(postId, commentId)
+        );
+    };
+    
+    async function deleteCommentByAdmin(postId, commentId) {
+        try {
+            // 댓글 삭제
+            await deleteDoc(doc(db, 'posts', postId, 'comments', commentId));
+            // 게시물의 commentCount 감소
+            try {
+                const postRef = doc(db, 'posts', postId);
+                const postSnap = await getDoc(postRef);
+                if (postSnap.exists()) {
+                    const currentCount = postSnap.data().commentCount || 0;
+                    await updateDoc(postRef, { commentCount: Math.max(0, currentCount - 1) });
+                }
+            } catch (e) {
+                console.warn('commentCount 갱신 실패:', e);
+            }
+            
+            // 메모리에서 제거
+            reportedComments = reportedComments.filter(rc => !(rc.postId === postId && rc.commentId === commentId));
+            
+            showToast('✅ 댓글 삭제 완료');
+            renderReports();
+            updateReportNavBadge();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 삭제 실패: ' + e.message);
+        }
+    }
+    
+    // 게시물 삭제 후에는 신고 카운트도 자연스럽게 사라짐 (게시물 자체가 없어지니까)
+    // confirmDeletePost는 이미 정의되어 있음 (renderReports에서도 사용)
+    
+    // ============ 어드민 관리 ============
+    
+    window.loadAdmins = async function() {
+        document.getElementById('admins-loading').style.display = 'block';
+        document.getElementById('admins-content').style.display = 'none';
+        
+        try {
+            // 최신 사용자 데이터 다시 로드
+            const usersSnap = await getDocs(collection(db, 'users'));
+            allUsers.clear();
+            usersSnap.forEach(d => {
+                allUsers.set(d.id, { id: d.id, ...d.data() });
+            });
+            
+            renderAdmins();
+        } catch (e) {
+            console.error('어드민 목록 로드 실패:', e);
+            showToast('❌ 로드 실패: ' + e.message);
+        } finally {
+            document.getElementById('admins-loading').style.display = 'none';
+            document.getElementById('admins-content').style.display = 'block';
+        }
+    };
+    
+    window.renderAdmins = function() {
+        const search = (document.getElementById('admin-search')?.value || '').trim().toLowerCase();
+        
+        // 모든 사용자 분류
+        const allUsersList = Array.from(allUsers.values());
+        
+        // 1. 현재 어드민 (isAdmin === true)
+        let currentAdmins = allUsersList.filter(u => u.isAdmin === true);
+        // 슈퍼 어드민 먼저, 그 다음 일반 어드민
+        currentAdmins.sort((a, b) => {
+            if (a.isSuperAdmin && !b.isSuperAdmin) return -1;
+            if (!a.isSuperAdmin && b.isSuperAdmin) return 1;
+            return (a.nickname || '').localeCompare(b.nickname || '');
+        });
+        
+        // 2. 이메일 가입 사용자 (어드민 아니고, email 있음)
+        // email이 있다는 건 EmailAuthProvider로 가입했다는 뜻 (익명은 email 필드 없음)
+        let emailUsers = allUsersList.filter(u => 
+            !u.isAdmin && 
+            (u.email || u.linkedEmail)  // email 또는 linkedEmail (linkWithCredential 후 저장된 경우)
+        );
+        emailUsers.sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
+        
+        // 검색 필터
+        if (search) {
+            const filterFn = u => {
+                const nick = (u.nickname || '').toLowerCase();
+                const email = (u.email || u.linkedEmail || '').toLowerCase();
+                return nick.includes(search) || email.includes(search);
+            };
+            currentAdmins = currentAdmins.filter(filterFn);
+            emailUsers = emailUsers.filter(filterFn);
+        }
+        
+        // 카운트 업데이트
+        document.getElementById('current-admins-count').textContent = currentAdmins.length;
+        document.getElementById('email-users-count').textContent = emailUsers.length;
+        
+        // 현재 어드민 렌더링
+        const currentAdminsList = document.getElementById('current-admins-list');
+        if (currentAdmins.length === 0) {
+            currentAdminsList.innerHTML = '<div class="admin-empty">조건에 맞는 어드민이 없어요</div>';
+        } else {
+            currentAdminsList.innerHTML = currentAdmins.map(u => renderAdminRow(u, true)).join('');
+        }
+        
+        // 이메일 사용자 렌더링
+        const emailUsersList = document.getElementById('email-users-list');
+        if (emailUsers.length === 0) {
+            emailUsersList.innerHTML = '<div class="admin-empty">조건에 맞는 이메일 사용자가 없어요</div>';
+        } else {
+            emailUsersList.innerHTML = emailUsers.map(u => renderAdminRow(u, false)).join('');
+        }
+    };
+    
+    function renderAdminRow(u, isCurrentAdmin) {
+        const isMe = u.id === currentAdmin.uid;
+        const isSuper = u.isSuperAdmin === true;
+        const email = u.email || u.linkedEmail || '-';
+        const nickname = u.nickname || '닉네임 없음';
+        const avatarHtml = u.profilePic
+            ? `<div class="avatar"><img src="${u.profilePic}" alt=""></div>`
+            : `<div class="avatar">${escapeHtml(nickname.substring(0, 1))}</div>`;
+        
+        // 역할 뱃지
+        let roleBadges = '';
+        if (isSuper) {
+            roleBadges += `<span class="role-badge super">👑 SUPER</span>`;
+        } else if (u.isAdmin) {
+            roleBadges += `<span class="role-badge admin">🛡️ ADMIN</span>`;
+        }
+        if (isMe) {
+            roleBadges += `<span class="role-badge me">나</span>`;
+        }
+        
+        // 액션 버튼
+        let actions = '';
+        if (isCurrentAdmin) {
+            // 현재 어드민에 대한 액션
+            if (isMe) {
+                // 본인은 자기 자신 회수 불가 (안전장치)
+                actions += `<button class="btn" disabled title="본인 권한은 회수할 수 없어요">본인</button>`;
+            } else {
+                if (isSuper) {
+                    // 다른 슈퍼 어드민
+                    actions += `<button class="btn" onclick="confirmRevokeSuper('${u.id}')">슈퍼 회수</button>`;
+                    actions += `<button class="btn danger" onclick="confirmRevokeAdmin('${u.id}')">어드민 회수</button>`;
+                } else {
+                    // 일반 어드민
+                    actions += `<button class="btn gold" onclick="confirmGrantSuper('${u.id}')">👑 슈퍼 부여</button>`;
+                    actions += `<button class="btn danger" onclick="confirmRevokeAdmin('${u.id}')">회수</button>`;
+                }
+            }
+        } else {
+            // 어드민 후보 (이메일 사용자)
+            actions += `<button class="btn primary" onclick="confirmGrantAdmin('${u.id}')">⬆️ 어드민 지정</button>`;
+        }
+        
+        return `
+            <div class="admin-row">
+                ${avatarHtml}
+                <div class="info">
+                    <div class="name">@${escapeHtml(nickname)} ${roleBadges}</div>
+                    <div class="meta">${escapeHtml(email)} · UID: ${u.id.substring(0, 12)}...</div>
+                </div>
+                <div class="actions">${actions}</div>
+            </div>
+        `;
+    }
+    
+    // ===== 권한 부여/회수 동작 =====
+    
+    window.confirmGrantAdmin = function(userId) {
+        const u = allUsers.get(userId);
+        if (!u) return;
+        showConfirm(
+            '🛡️ 어드민 권한 부여',
+            `@${u.nickname || '익명'}님에게 어드민 권한을 부여할까요?\n\n부여 후 다음 작업이 가능해집니다:\n• 게시물·댓글 삭제\n• 신고 처리\n\n⚠️ 권한은 신중하게 부여해주세요.`,
+            () => grantAdmin(userId)
+        );
+    };
+    
+    async function grantAdmin(userId) {
+        try {
+            await updateDoc(doc(db, 'users', userId), { isAdmin: true });
+            const u = allUsers.get(userId);
+            if (u) u.isAdmin = true;
+            showToast('✅ 어드민 권한 부여 완료');
+            renderAdmins();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 부여 실패: ' + e.message);
+        }
+    }
+    
+    window.confirmRevokeAdmin = function(userId) {
+        const u = allUsers.get(userId);
+        if (!u) return;
+        const isSuper = u.isSuperAdmin === true;
+        const msg = isSuper
+            ? `@${u.nickname || '익명'}님의 어드민 권한을 회수할까요?\n\n⚠️ 슈퍼 어드민 권한도 함께 사라집니다.\n어드민 페이지에 더 이상 접근할 수 없게 됩니다.`
+            : `@${u.nickname || '익명'}님의 어드민 권한을 회수할까요?\n\n어드민 페이지에 더 이상 접근할 수 없게 됩니다.`;
+        showConfirm('🚫 어드민 권한 회수', msg, () => revokeAdmin(userId));
+    };
+    
+    async function revokeAdmin(userId) {
+        try {
+            // isAdmin과 isSuperAdmin 둘 다 회수
+            await updateDoc(doc(db, 'users', userId), { 
+                isAdmin: false, 
+                isSuperAdmin: false 
+            });
+            const u = allUsers.get(userId);
+            if (u) { u.isAdmin = false; u.isSuperAdmin = false; }
+            showToast('✅ 어드민 권한 회수 완료');
+            renderAdmins();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 회수 실패: ' + e.message);
+        }
+    }
+    
+    window.confirmGrantSuper = function(userId) {
+        const u = allUsers.get(userId);
+        if (!u) return;
+        showConfirm(
+            '👑 슈퍼 어드민 부여',
+            `@${u.nickname || '익명'}님에게 슈퍼 어드민 권한을 부여할까요?\n\n슈퍼 어드민은 다음 작업이 가능합니다:\n• 다른 사용자에게 어드민 권한 부여/회수\n• 다른 슈퍼 어드민 부여/회수 (본인 제외)\n• 모든 어드민 기능\n\n⚠️ 매우 강력한 권한이니 신중하게 부여해주세요.`,
+            () => grantSuper(userId)
+        );
+    };
+    
+    async function grantSuper(userId) {
+        try {
+            await updateDoc(doc(db, 'users', userId), { 
+                isAdmin: true,         // 어드민도 같이 (혹시 일반 어드민 아니면 같이 부여)
+                isSuperAdmin: true 
+            });
+            const u = allUsers.get(userId);
+            if (u) { u.isAdmin = true; u.isSuperAdmin = true; }
+            showToast('✅ 슈퍼 어드민 권한 부여 완료');
+            renderAdmins();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 부여 실패: ' + e.message);
+        }
+    }
+    
+    window.confirmRevokeSuper = function(userId) {
+        const u = allUsers.get(userId);
+        if (!u) return;
+        showConfirm(
+            '🚫 슈퍼 어드민 회수',
+            `@${u.nickname || '익명'}님의 슈퍼 어드민 권한만 회수할까요?\n\n어드민 권한은 그대로 유지되며, 다른 사람의 권한 관리만 못 하게 됩니다.`,
+            () => revokeSuper(userId)
+        );
+    };
+    
+    async function revokeSuper(userId) {
+        try {
+            await updateDoc(doc(db, 'users', userId), { isSuperAdmin: false });
+            const u = allUsers.get(userId);
+            if (u) u.isSuperAdmin = false;
+            showToast('✅ 슈퍼 어드민 회수 완료 (어드민은 유지)');
+            renderAdmins();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 회수 실패: ' + e.message);
+        }
+    }
+    
+    // ============ 사용자 관리 ============
+    
+    let userPostsMap = new Map(); // uid → posts[]
+    let userReportsMap = new Map(); // uid → 받은 신고 횟수 합계
+    
+    window.loadUsers = async function() {
+        document.getElementById('users-loading').style.display = 'block';
+        document.getElementById('users-content').style.display = 'none';
+        
+        try {
+            // 최신 데이터 다시 로드
+            await loadAllData();
+            
+            // 사용자별 게시물 매핑
+            userPostsMap.clear();
+            userReportsMap.clear();
+            allPosts.forEach(p => {
+                if (!p.authorId) return;
+                if (!userPostsMap.has(p.authorId)) userPostsMap.set(p.authorId, []);
+                userPostsMap.get(p.authorId).push(p);
+                
+                // 받은 신고 누적
+                const currentReports = userReportsMap.get(p.authorId) || 0;
+                userReportsMap.set(p.authorId, currentReports + (p.reportCount || 0));
+            });
+            
+            renderUsers();
+        } catch (e) {
+            console.error('사용자 로드 실패:', e);
+            showToast('❌ 로드 실패: ' + e.message);
+        } finally {
+            document.getElementById('users-loading').style.display = 'none';
+            document.getElementById('users-content').style.display = 'block';
+        }
+    };
+    
+    window.renderUsers = function() {
+        const search = (document.getElementById('user-search')?.value || '').trim().toLowerCase();
+        const sort = document.getElementById('user-sort')?.value || 'recent';
+        const filter = document.getElementById('user-filter')?.value || 'all';
+        
+        let users = Array.from(allUsers.values());
+        
+        // 필터
+        if (filter === 'email') {
+            users = users.filter(u => u.email || u.linkedEmail);
+        } else if (filter === 'anonymous') {
+            users = users.filter(u => !u.email && !u.linkedEmail);
+        } else if (filter === 'admin') {
+            users = users.filter(u => u.isAdmin === true);
+        } else if (filter === 'banned') {
+            users = users.filter(u => u.banned === true);
+        } else if (filter === 'reported') {
+            users = users.filter(u => (userReportsMap.get(u.id) || 0) > 0);
+        }
+        
+        // 검색
+        if (search) {
+            users = users.filter(u => {
+                const nick = (u.nickname || '').toLowerCase();
+                const email = (u.email || u.linkedEmail || '').toLowerCase();
+                const uid = u.id.toLowerCase();
+                return nick.includes(search) || email.includes(search) || uid.includes(search);
+            });
+        }
+        
+        // 정렬
+        if (sort === 'recent') {
+            users.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        } else if (sort === 'oldest') {
+            users.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+        } else if (sort === 'posts') {
+            users.sort((a, b) => (userPostsMap.get(b.id)?.length || 0) - (userPostsMap.get(a.id)?.length || 0));
+        } else if (sort === 'likes') {
+            const getTotalLikes = (u) => (userPostsMap.get(u.id) || []).reduce((s, p) => s + (p.likes || 0), 0);
+            users.sort((a, b) => getTotalLikes(b) - getTotalLikes(a));
+        } else if (sort === 'reports') {
+            users.sort((a, b) => (userReportsMap.get(b.id) || 0) - (userReportsMap.get(a.id) || 0));
+        } else if (sort === 'name') {
+            users.sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
+        }
+        
+        document.getElementById('user-count-summary').textContent = `${formatNum(users.length)}명`;
+        
+        const list = document.getElementById('user-list');
+        if (users.length === 0) {
+            list.innerHTML = '<div class="empty"><div class="big">👥</div><div class="text">조건에 맞는 사용자가 없어요</div></div>';
+            return;
+        }
+        
+        list.innerHTML = users.map(u => renderUserCard(u)).join('');
+    };
+    
+    function renderUserCard(u) {
+        const userPosts = userPostsMap.get(u.id) || [];
+        const totalLikes = userPosts.reduce((s, p) => s + (p.likes || 0), 0);
+        const totalReports = userReportsMap.get(u.id) || 0;
+        const email = u.email || u.linkedEmail;
+        const isMe = u.id === currentAdmin.uid;
+        const isBanned = u.banned === true;
+        const isSuper = u.isSuperAdmin === true;
+        const isAdmin = u.isAdmin === true;
+        
+        const avatarHtml = u.profilePic
+            ? `<div class="avatar"><img src="${u.profilePic}" alt=""></div>`
+            : `<div class="avatar">${escapeHtml((u.nickname || '?').substring(0, 1))}</div>`;
+        
+        let badges = '';
+        if (isSuper) badges += `<span class="badge super">👑 SUPER</span>`;
+        else if (isAdmin) badges += `<span class="badge admin">🛡️ ADMIN</span>`;
+        if (email) badges += `<span class="badge email">✉️ 이메일</span>`;
+        else badges += `<span class="badge anonymous">👤 익명</span>`;
+        if (isBanned) badges += `<span class="badge banned">🔇 차단</span>`;
+        if (totalReports > 0) badges += `<span class="badge reported">🚨 신고 ${totalReports}</span>`;
+        
+        // 액션 버튼
+        let actions = '';
+        actions += `<button class="btn primary" onclick="openUserDetail('${u.id}')">📋 상세</button>`;
+        if (!isMe) {
+            actions += `<button class="btn warning" onclick="openNicknameEdit('${u.id}')">✏️ 닉네임</button>`;
+            if (isBanned) {
+                actions += `<button class="btn success" onclick="confirmUnbanUser('${u.id}')">🔓 차단해제</button>`;
+            } else {
+                actions += `<button class="btn danger" onclick="confirmBanUser('${u.id}')">🔇 차단</button>`;
+            }
+        } else {
+            actions += `<button class="btn" disabled style="opacity:0.5; cursor:not-allowed;">본인</button>`;
+        }
+        
+        return `
+            <div class="user-card ${isBanned ? 'banned' : ''}">
+                <div class="header">
+                    ${avatarHtml}
+                    <div class="info">
+                        <div class="name-row">
+                            <span class="name">@${escapeHtml(u.nickname || '닉네임 없음')}</span>
+                        </div>
+                        <div class="meta">${escapeHtml(email || `UID: ${u.id.substring(0,16)}...`)}</div>
+                        <div class="meta" style="margin-top:2px;">가입: ${formatTime(u.createdAt) || '-'}</div>
+                    </div>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">${badges}</div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="value">${formatNum(userPosts.length)}</div>
+                        <div class="label">📷 게시물</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="value">${formatNum(totalLikes)}</div>
+                        <div class="label">❤️ 받은 좋아요</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="value" style="${totalReports>0?'color:var(--point);':''}">${formatNum(totalReports)}</div>
+                        <div class="label">🚨 신고 누적</div>
+                    </div>
+                </div>
+                <div class="actions">${actions}</div>
+            </div>
+        `;
+    }
+    
+    // ===== 사용자 상세 =====
+    window.openUserDetail = function(userId) {
+        const u = allUsers.get(userId);
+        if (!u) return;
+        
+        const userPosts = userPostsMap.get(userId) || [];
+        const totalLikes = userPosts.reduce((s, p) => s + (p.likes || 0), 0);
+        const totalDislikes = userPosts.reduce((s, p) => s + (p.dislikes || 0), 0);
+        const totalComments = userPosts.reduce((s, p) => s + (p.commentCount || 0), 0);
+        const totalViews = userPosts.reduce((s, p) => s + (p.views || 0), 0);
+        const totalReports = userReportsMap.get(userId) || 0;
+        const hiddenPosts = userPosts.filter(p => p.hidden === true).length;
+        const visiblePosts = userPosts.length - hiddenPosts;
+        const email = u.email || u.linkedEmail;
+        
+        const avatarHtml = u.profilePic
+            ? `<img src="${u.profilePic}" style="width:60px; height:60px; border-radius:50%; object-fit:cover;" alt="">`
+            : `<div style="width:60px; height:60px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800;">${escapeHtml((u.nickname || '?').substring(0,1))}</div>`;
+        
+        // 게시물 썸네일 (최신 12개)
+        const recentPosts = [...userPosts].sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0)).slice(0, 12);
+        let thumbsHtml = '';
+        if (recentPosts.length === 0) {
+            thumbsHtml = '<div style="text-align:center; padding:20px; font-size:12px; color:var(--sub-text);">아직 작성한 게시물이 없어요</div>';
+        } else {
+            thumbsHtml = recentPosts.map(p => `
+                <div class="thumb ${p.hidden ? 'hidden' : ''}" onclick="openImgViewer('${p.imgUrl}')">
+                    <img src="${p.imgUrl}" alt="">
+                </div>
+            `).join('');
+        }
+        
+        const html = `
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+                ${avatarHtml}
+                <div style="flex:1; min-width:0;">
+                    <h2 style="margin-bottom:4px;">@${escapeHtml(u.nickname || '닉네임 없음')}</h2>
+                    <div class="sub" style="margin-bottom:0;">${u.banned ? '🔇 차단된 사용자' : ''} ${u.isSuperAdmin ? '👑 슈퍼 어드민' : u.isAdmin ? '🛡️ 어드민' : ''}</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">기본 정보</div>
+                <div class="info-row"><span class="label">UID</span><span class="value">${u.id}</span></div>
+                <div class="info-row"><span class="label">이메일</span><span class="value">${escapeHtml(email || '(익명 사용자)')}</span></div>
+                <div class="info-row"><span class="label">가입일</span><span class="value">${u.createdAt ? u.createdAt.toDate().toLocaleString('ko-KR') : '-'}</span></div>
+                <div class="info-row"><span class="label">마지막 업데이트</span><span class="value">${u.updatedAt ? formatTime(u.updatedAt) : '-'}</span></div>
+                <div class="info-row"><span class="label">차단 상태</span><span class="value">${u.banned ? '🔇 차단됨' : '✅ 정상'}</span></div>
+                ${u.bannedAt ? `<div class="info-row"><span class="label">차단된 시각</span><span class="value">${u.bannedAt.toDate?.().toLocaleString('ko-KR') || '-'}</span></div>` : ''}
+                ${u.banReason ? `<div class="info-row"><span class="label">차단 사유</span><span class="value">${escapeHtml(u.banReason)}</span></div>` : ''}
+            </div>
+            
+            <div class="section">
+                <div class="section-title">활동 통계</div>
+                <div class="info-row"><span class="label">📷 총 게시물</span><span class="value">${formatNum(userPosts.length)}개 (공개 ${visiblePosts}, 숨김 ${hiddenPosts})</span></div>
+                <div class="info-row"><span class="label">❤️ 받은 좋아요</span><span class="value">${formatNum(totalLikes)}</span></div>
+                <div class="info-row"><span class="label">💔 받은 싫어요</span><span class="value">${formatNum(totalDislikes)}</span></div>
+                <div class="info-row"><span class="label">💬 받은 댓글</span><span class="value">${formatNum(totalComments)}</span></div>
+                <div class="info-row"><span class="label">👁️ 받은 조회수</span><span class="value">${formatNum(totalViews)}</span></div>
+                <div class="info-row"><span class="label">🚨 받은 신고</span><span class="value" style="${totalReports>0?'color:var(--point);':''}">${formatNum(totalReports)}회</span></div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">최근 게시물 (최대 12개)</div>
+                <div class="post-thumbs">${thumbsHtml}</div>
+            </div>
+        `;
+        
+        document.getElementById('user-detail-content').innerHTML = html;
+        document.getElementById('user-detail-modal').classList.add('active');
+    };
+    
+    window.closeUserDetail = function() {
+        document.getElementById('user-detail-modal').classList.remove('active');
+    };
+    
+    // ===== 닉네임 변경 =====
+    let editingUserId = null;
+    
+    window.openNicknameEdit = function(userId) {
+        const u = allUsers.get(userId);
+        if (!u) return;
+        editingUserId = userId;
+        document.getElementById('nickname-edit-msg').textContent = `@${u.nickname || '익명'}님의 닉네임을 변경합니다.\n부적절한 닉네임을 정리할 때 사용하세요.`;
+        document.getElementById('nickname-edit-input').value = u.nickname || '';
+        document.getElementById('nickname-edit-confirm-btn').onclick = saveNicknameEdit;
+        document.getElementById('nickname-edit-modal').classList.add('active');
+        setTimeout(() => document.getElementById('nickname-edit-input').focus(), 100);
+    };
+    
+    window.closeNicknameEdit = function() {
+        document.getElementById('nickname-edit-modal').classList.remove('active');
+        editingUserId = null;
+    };
+    
+    async function saveNicknameEdit() {
+        const newNick = document.getElementById('nickname-edit-input').value.trim();
+        if (!newNick) {
+            showToast('⚠️ 닉네임을 입력해주세요');
+            return;
+        }
+        if (newNick.length > 10) {
+            showToast('⚠️ 닉네임은 10자 이내로 입력해주세요');
+            return;
+        }
+        if (!editingUserId) return;
+        
+        try {
+            await updateDoc(doc(db, 'users', editingUserId), { 
+                nickname: newNick,
+                nicknameForcedAt: Timestamp.now(),
+                nicknameForcedBy: currentAdmin.uid
+            });
+            const u = allUsers.get(editingUserId);
+            if (u) u.nickname = newNick;
+            
+            showToast('✅ 닉네임 변경 완료');
+            closeNicknameEdit();
+            renderUsers();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 변경 실패: ' + e.message);
+        }
+    }
+    
+    // ===== 차단 (소프트 밴) =====
+    window.confirmBanUser = function(userId) {
+        const u = allUsers.get(userId);
+        if (!u) return;
+        showConfirm(
+            '🔇 사용자 차단',
+            `@${u.nickname || '익명'}님을 차단할까요?\n\n[소프트 차단 영향]\n• 게시물·댓글 작성 불가\n• 좋아요·싫어요 가능 (읽기는 정상)\n• 기존 게시물은 그대로 노출\n• 언제든 차단 해제 가능`,
+            () => banUser(userId)
+        );
+    };
+    
+    async function banUser(userId) {
+        try {
+            await updateDoc(doc(db, 'users', userId), { 
+                banned: true,
+                bannedAt: Timestamp.now(),
+                bannedBy: currentAdmin.uid
+            });
+            const u = allUsers.get(userId);
+            if (u) { u.banned = true; u.bannedAt = Timestamp.now(); }
+            
+            showToast('🔇 차단 완료');
+            renderUsers();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 차단 실패: ' + e.message);
+        }
+    }
+    
+    window.confirmUnbanUser = function(userId) {
+        const u = allUsers.get(userId);
+        if (!u) return;
+        showConfirm(
+            '🔓 차단 해제',
+            `@${u.nickname || '익명'}님의 차단을 해제할까요?\n\n• 게시물·댓글 작성 다시 가능해짐`,
+            () => unbanUser(userId)
+        );
+    };
+    
+    async function unbanUser(userId) {
+        try {
+            await updateDoc(doc(db, 'users', userId), { 
+                banned: false
+            });
+            const u = allUsers.get(userId);
+            if (u) u.banned = false;
+            
+            showToast('🔓 차단 해제 완료');
+            renderUsers();
+        } catch (e) {
+            console.error(e);
+            showToast('❌ 해제 실패: ' + e.message);
+        }
+    }
+</script>
+
+</body>
+</html>
